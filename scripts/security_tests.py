@@ -132,6 +132,22 @@ def check_mcp_tools(tokens: dict) -> Result:
     return Result("MCP server lists only allowed tools", "4 tools, no customer tool", ", ".join(sorted(tools)), ok)
 
 
+def check_mcp_tool_call(tokens: dict) -> Result:
+    """A tool call must work for standard MCP clients: real data and exactly one Content-Type header."""
+    headers = {"Authorization": f"Bearer {tokens['agent']}", "Accept": "application/json, text/event-stream"}
+    http.post(MCP, headers=headers, json={
+        "jsonrpc": "2.0", "id": 1, "method": "initialize",
+        "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "security-tests", "version": "1"}},
+    })
+    called = http.post(MCP, headers=headers, json={
+        "jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "getTopProducts", "arguments": {"limit": 1}},
+    })
+    types = called.headers.get_list("content-type")
+    has_data = called.status_code == 200 and bool(called.json().get("result", {}).get("content"))
+    return Result("MCP tool call works for standard clients", "200 with data, one Content-Type",
+                  f"{called.status_code}, {len(types)} Content-Type header(s)", has_data and len(types) == 1)
+
+
 def log_size(path: Path) -> int:
     return path.stat().st_size if path.exists() else 0
 
@@ -212,6 +228,7 @@ def run() -> list[Result]:
         check_cors_allowed,
         check_cors_blocked,
         lambda: check_mcp_tools(tokens),
+        lambda: check_mcp_tool_call(tokens),
         lambda: check_logging(offsets),
         lambda: check_logs_clean(offsets, tokens, values.get("GATEWAY_SHARED_SECRET", "")),
         lambda: check_agent_burst(tokens),  # keep this last: it uses up the agent's limit for a minute

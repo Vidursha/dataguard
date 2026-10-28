@@ -273,6 +273,17 @@ Calling a tool that does not exist returns a 500 SOAP fault from the gateway
 rather than a JSON-RPC error. That is a 4.6.0 quirk, documented as a limitation;
 no data is exposed.
 
+**Fix: two Content-Type headers on tool calls.** Standard MCP clients (MCP
+Inspector, for example) refused to work with the server: for `tools/call`, the
+gateway answered with two `Content-Type` headers, the backend's
+`application/json` passed through plus the gateway's own
+`application/json; charset=UTF-8`. MCP servers in 4.6.0 don't accept response
+policies ("policy is not allowed in response flow"), so `api.py` adds the
+built-in `removeHeader` policy to the *API's* response flow instead, removing
+the backend's `Content-Type`. The gateway still sets its own, so REST responses
+keep exactly one `Content-Type` (checked, including CORS and the 403), and MCP
+tool calls now return one as well. `security_tests.py` checks this on every run.
+
 **Sources:** <https://apim.docs.wso2.com/en/4.6.0/ai-gateway/mcp-gateway/overview/>,
 <https://apim.docs.wso2.com/en/4.6.0/ai-gateway/mcp-gateway/create-from-api/>.
 
@@ -380,7 +391,7 @@ pages are lazy-loaded so the charting library is not in the first download.
 - **Frontend unit (Vitest + Testing Library, 31 tests):** all network calls
   mocked; tests for the 403 and 429 panels use the exact error bodies API
   Manager returns.
-- **Live security (`scripts/security_tests.py`, 12 checks):** real tokens,
+- **Live security (`scripts/security_tests.py`, 13 checks):** real tokens,
   obtained through the real login page with PKCE, against the real gateway,
   including the two log checks (see 14a).
 - **Live UI (`npm run e2e`, Playwright with the Edge already installed on

@@ -251,7 +251,7 @@ anything in the browser can be changed by the user.
 |---|---|---|
 | Backend | Every endpoint, bad inputs, guest handling, gateway secret, cleaning rules | 59 pytest tests |
 | Frontend | KPI cards, charts, 403/429 panels, loading/error/empty states, auth guard, PKCE maths | 31 Vitest tests |
-| Live security | Real tokens against the real gateway: 401, 403, 200, scopes, direct-backend block, CORS, MCP tools, logging without secrets, 429 | 12 checks |
+| Live security | Real tokens against the real gateway: 401, 403, 200, scopes, direct-backend block, CORS, MCP tools and tool calls, logging without secrets, 429 | 13 checks |
 | Live UI | Real browser signs in through WSO2 as analyst and manager, sees real 403, 200 and 429, mobile dark layout | 4 Playwright tests |
 
 A real bug was caught this way: after re-uploading the API definition, WSO2 had

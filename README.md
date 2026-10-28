@@ -218,13 +218,14 @@ venv\Scripts\python scripts\security_tests.py
 | CORS preflight from the dashboard origin | allowed (http://localhost:5173) | http://localhost:5173 | PASS |
 | CORS preflight from an unknown origin | blocked (origin not echoed) | (none) | PASS |
 | MCP server lists only allowed tools | 4 tools, no customer tool | getMonthlySales, getRevenueByCountry, getSalesSummary, getTopProducts | PASS |
+| MCP tool call works for standard clients | 200 with data, one Content-Type | 200, 1 Content-Type header(s) | PASS |
 | Gateway logs record method, path, status, app, user | both present | audit line: yes; 403 in api.log: yes | PASS |
 | Logs contain no secret or tokens | none found | none found | PASS |
-| Burst of requests from the AI Agent app | 429 after the 10/min limit | 429 after 10 OK | PASS |
+| Burst of requests from the AI Agent app | 429 after the 10/min limit | 429 after 9 OK | PASS |
 
 Limits are counted in fixed one-minute windows, so a burst that crosses a window
 boundary can get a couple of extra requests through before the 429 (runs during
-the build saw 10, 12 and 17).
+the build saw 9, 10, 12 and 17).
 
 Other results from the same final run: backend **59 passed**, frontend unit
 tests **31 passed**, lint clean, production build OK, live browser tests

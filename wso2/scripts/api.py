@@ -115,9 +115,10 @@ def create_or_update(client: Client, spec_path: Path) -> str:
     return created["id"]
 
 
-def add_header_policy(client: Client) -> dict:
+def common_policy(client: Client, name: str) -> dict:
+    """Reference to the newest version of one of API Manager's built-in policies."""
     policies = client.get(f"{PUBLISHER}/operation-policies", params={"limit": 200})["list"]
-    policy = max((p for p in policies if p["name"] == "addHeader"), key=lambda p: p["version"])
+    policy = max((p for p in policies if p["name"] == name), key=lambda p: p["version"])
     return {"policyName": policy["name"], "policyVersion": policy["version"], "policyId": policy["id"],
             "policyType": "common"}
 
@@ -145,11 +146,20 @@ def configure(client: Client, api_id: str) -> None:
         "accessControlAllowMethods": ["GET", "OPTIONS"],
     }
     # Request policy for the whole API: the gateway adds the shared secret to every backend call.
-    header = add_header_policy(client)
-    # Response policy: one audit line per request (see audit.py), never headers or bodies.
+    add_header = common_policy(client, "addHeader")
+    # Response policies:
+    # 1. one audit line per request (see audit.py), never headers or bodies.
+    # 2. drop the backend's Content-Type header. The gateway sets its own anyway, and
+    #    without this, MCP tool calls answer with two Content-Type headers, which MCP
+    #    clients (like MCP Inspector) reject. MCP servers don't allow response policies
+    #    in 4.6.0, so it has to be done here on the API.
+    remove_header = common_policy(client, "removeHeader")
     api["apiPolicies"] = {
-        "request": [{**header, "parameters": {"headerName": GATEWAY_SECRET_HEADER, "headerValue": secret}}],
-        "response": [audit.ensure_audit_policy(client, api_id)],
+        "request": [{**add_header, "parameters": {"headerName": GATEWAY_SECRET_HEADER, "headerValue": secret}}],
+        "response": [
+            audit.ensure_audit_policy(client, api_id),
+            {**remove_header, "parameters": {"headerName": "Content-Type"}},
+        ],
         "fault": [],
     }
     api["policies"] = ["Unlimited"]
