@@ -14,7 +14,7 @@ const monthYear = new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'nume
 const dayMonthYear = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 const timeOfDay = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
 
-/** £20,434,356 for large figures; pass pence=true for £510.97. */
+/** £19,725,088 for large figures; pass pence=true for £497.62. */
 export function formatGBP(value: number, pence = false): string {
   return (pence ? gbpPence : gbpWhole).format(value)
 }

@@ -48,8 +48,8 @@ test('analyst sees real data but gets a real 403 on customer lookup', async ({ p
   const { ANALYST1_PASSWORD } = env()
   await signIn(page, 'analyst1', ANALYST1_PASSWORD)
 
-  await expect(page.getByText('£20,434,356')).toBeVisible()
-  await expect(page.getByText('39,991')).toBeVisible()
+  await expect(page.getByText('£19,725,088')).toBeVisible()
+  await expect(page.getByText('39,639')).toBeVisible()
   await expect(page.getByTestId('monthly-chart')).toBeVisible()
   await page.screenshot({ path: join(SHOTS, 'overview-analyst.png'), fullPage: true })
 
@@ -92,7 +92,7 @@ test('manager sees the customer summary', async ({ page }) => {
 test('a burst of refreshes gets a real 429 from the gateway', async ({ page }) => {
   const { ANALYST1_PASSWORD } = env()
   await signIn(page, 'analyst1', ANALYST1_PASSWORD)
-  await expect(page.getByText('£20,434,356')).toBeVisible()
+  await expect(page.getByText('£19,725,088')).toBeVisible()
 
   let throttled = false
   page.on('response', (r) => {

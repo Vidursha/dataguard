@@ -10,7 +10,7 @@ import { analyst, jsonResponse, makeSession, manager, mockFetch, renderWithAuth,
 
 const GATEWAY = 'https://gateway.test:8243/dataguard/1.0.0'
 
-const summary = { period: { start: null, end: null }, total_revenue: 20434356.35, orders: 39991, average_order_value: 510.97, customers: 5869, units_sold: 11205020 }
+const summary = { period: { start: null, end: null }, total_revenue: 19725087.52, orders: 39639, average_order_value: 497.62, customers: 5842, units_sold: 11205020 }
 const monthly = { period: { start: null, end: null }, months: [{ month: '2010-11', revenue: 1460000, orders: 2900 }] }
 const products = {
   products: [{ rank: 1, stock_code: '22423', description: 'REGENCY CAKESTAND 3 TIER', units_sold: 26478, revenue: 330590.32, orders: 3918 }],
@@ -78,10 +78,10 @@ describe('Overview page', () => {
     renderWithAuth(<OverviewPage />)
     expect(screen.getByText('Loading key figures')).toBeInTheDocument()
     release()
-    expect(await screen.findByText('£20,434,356')).toBeInTheDocument()
-    expect(screen.getByText('39,991')).toBeInTheDocument()
-    expect(screen.getByText('£510.97')).toBeInTheDocument()
-    expect(screen.getByText('5,869')).toBeInTheDocument()
+    expect(await screen.findByText('£19,725,088')).toBeInTheDocument()
+    expect(screen.getByText('39,639')).toBeInTheDocument()
+    expect(screen.getByText('£497.62')).toBeInTheDocument()
+    expect(screen.getByText('5,842')).toBeInTheDocument()
   })
 
   it('shows the friendly 429 message when the gateway throttles', async () => {
@@ -95,7 +95,7 @@ describe('Overview page', () => {
   it('sends the chosen date range to the gateway', async () => {
     const fetchMock = mockFetch((url) => jsonResponse(200, url.includes('/monthly') ? monthly : summary))
     renderWithAuth(<OverviewPage />)
-    await screen.findByText('£20,434,356')
+    await screen.findByText('£19,725,088')
     await userEvent.click(screen.getByRole('button', { name: '2010' }))
     await waitFor(() =>
       expect(fetchMock.mock.calls.map((c) => String(c[0]))).toContain(`${GATEWAY}/sales/summary?from=2010-01-01&to=2010-12-31`),

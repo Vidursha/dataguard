@@ -4,8 +4,9 @@ Usage (from the project root, with the venv active):
     python backend/clean.py
 
 Reads both sheets of data/online_retail_II.xlsx, removes rows that are not
-genuine sales, moves cancellations into their own table, adds a revenue column
-and writes everything to data/dataguard.db. The script is safe to re-run: it
+genuine sales, moves cancellations into their own table, moves sales that a
+cancellation exactly reverses into cancelled_sales, adds a revenue column and
+writes everything to data/dataguard.db. The script is safe to re-run: it
 builds a fresh database file and swaps it in only when loading succeeded.
 """
 
@@ -78,8 +79,42 @@ def standardize(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def clean(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Return (sales, cancellations), printing each filtering step."""
+def match_cancellations(sales: pd.DataFrame, cancellations: pd.DataFrame) -> pd.Series:
+    """Pair each cancellation with the sale it reverses, one-to-one.
+
+    A cancellation matches a sale with the same customer, stock code and
+    absolute quantity that happened before it. Cancellations are processed
+    oldest first and each takes the most recent unmatched sale, so a customer
+    who bought the same item several times only loses the purchase that was
+    actually cancelled. Guest cancellations (no customer) are never matched.
+
+    Returns a Series indexed by sale index, holding the matching cancellation's
+    index; sales without a match are absent.
+    """
+    keys = ["customer_id", "stock_code", "quantity"]
+    sale_side = sales.loc[sales["customer_id"].notna(), keys + ["invoice_date"]]
+    cancel_side = cancellations.loc[cancellations["customer_id"].notna() & (cancellations["quantity"] < 0),
+                                    keys + ["invoice_date"]].copy()
+    cancel_side["quantity"] = -cancel_side["quantity"]
+    pairs = (
+        cancel_side.reset_index(names="cancel_idx")
+        .merge(sale_side.reset_index(names="sale_idx"), on=keys, suffixes=("_cancel", "_sale"))
+    )
+    pairs = pairs[pairs["invoice_date_sale"] < pairs["invoice_date_cancel"]]
+    pairs = pairs.sort_values(["invoice_date_cancel", "cancel_idx", "invoice_date_sale"],
+                              ascending=[True, True, False])
+    matched: dict[int, int] = {}
+    done: set[int] = set()
+    for cancel_idx, sale_idx in zip(pairs["cancel_idx"], pairs["sale_idx"]):
+        if cancel_idx in done or sale_idx in matched:
+            continue
+        matched[sale_idx] = cancel_idx
+        done.add(cancel_idx)
+    return pd.Series(matched, dtype="int64")
+
+
+def clean(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Return (sales, cancellations, cancelled_sales), printing each filtering step."""
     is_cancel = df["invoice"].str.startswith("C")
     cancellations = df[is_cancel].copy()
     sales = df[~is_cancel]
@@ -102,7 +137,18 @@ def clean(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     sales["is_product"] = (
         ~sales["stock_code"].isin(NON_PRODUCT_CODES) & ~sales["stock_code"].str.startswith("GIFT")
     ).astype("int64")
-    return sales.reset_index(drop=True), cancellations.reset_index(drop=True)
+
+    # Sales that a later cancellation exactly reverses move to cancelled_sales.
+    matches = match_cancellations(sales, cancellations)
+    cancelled_sales = sales.loc[matches.index].copy()
+    cancelled_sales["cancelled_by_invoice"] = cancellations.loc[matches.values, "invoice"].to_numpy()
+    cancelled_sales["cancelled_at"] = cancellations.loc[matches.values, "invoice_date"].to_numpy()
+    before = len(sales)
+    sales = sales.drop(index=matches.index)
+    log("Remove sales reversed by an exact cancellation", before, len(sales))
+    print(f"  {'':<55} revenue moved to cancelled_sales: GBP {cancelled_sales['revenue'].sum():,.2f}")
+    return (sales.reset_index(drop=True), cancellations.reset_index(drop=True),
+            cancelled_sales.sort_values("invoice_date").reset_index(drop=True))
 
 
 SCHEMA = """
@@ -130,6 +176,21 @@ CREATE TABLE cancellations (
     customer_id  INTEGER,
     country      TEXT    NOT NULL
 );
+CREATE TABLE cancelled_sales (      -- sales reversed by an exact cancellation
+    id                   INTEGER PRIMARY KEY,
+    invoice              TEXT    NOT NULL,
+    stock_code           TEXT    NOT NULL,
+    description          TEXT    NOT NULL,
+    quantity             INTEGER NOT NULL,
+    invoice_date         TEXT    NOT NULL,
+    price                REAL    NOT NULL,
+    revenue              REAL    NOT NULL,
+    customer_id          INTEGER NOT NULL,
+    country              TEXT    NOT NULL,
+    is_product           INTEGER NOT NULL,
+    cancelled_by_invoice TEXT    NOT NULL,  -- the 'C...' invoice that reversed it
+    cancelled_at         TEXT    NOT NULL
+);
 CREATE INDEX idx_sales_invoice_date ON sales (invoice_date);
 CREATE INDEX idx_sales_customer_id  ON sales (customer_id);
 CREATE INDEX idx_sales_country      ON sales (country);
@@ -155,17 +216,22 @@ def insert(conn: sqlite3.Connection, table: str, df: pd.DataFrame, columns: list
     )
 
 
-def load(sales: pd.DataFrame, cancellations: pd.DataFrame, target: Path) -> None:
-    """Write both tables to a temporary file, then replace the target in one step."""
+SALES_COLUMNS = ["invoice", "stock_code", "description", "quantity", "invoice_date",
+                 "price", "revenue", "customer_id", "country", "is_product"]
+
+
+def load(sales: pd.DataFrame, cancellations: pd.DataFrame, cancelled_sales: pd.DataFrame, target: Path) -> None:
+    """Write all tables to a temporary file, then replace the target in one step."""
     tmp = target.with_suffix(".db.tmp")
     tmp.unlink(missing_ok=True)
     conn = sqlite3.connect(tmp)
     try:
         conn.executescript(SCHEMA)
-        insert(conn, "sales", sales, ["invoice", "stock_code", "description", "quantity", "invoice_date",
-                                      "price", "revenue", "customer_id", "country", "is_product"])
+        insert(conn, "sales", sales, SALES_COLUMNS)
         insert(conn, "cancellations", cancellations, ["invoice", "stock_code", "description", "quantity",
                                                       "invoice_date", "price", "customer_id", "country"])
+        dated = cancelled_sales.assign(cancelled_at=cancelled_sales["cancelled_at"].dt.strftime("%Y-%m-%d %H:%M:%S"))
+        insert(conn, "cancelled_sales", dated, SALES_COLUMNS + ["cancelled_by_invoice", "cancelled_at"])
         conn.commit()
         conn.execute("ANALYZE")
         conn.commit()
@@ -186,13 +252,14 @@ def main() -> int:
     print(f"  Rows in '{SHEETS[1]}': {counts[SHEETS[1]]:,}")
     log("Drop rows duplicated across sheets (1-9 Dec 2010)", total, len(raw))
 
-    sales, cancellations = clean(standardize(raw))
-    load(sales, cancellations, TARGET)
+    sales, cancellations, cancelled_sales = clean(standardize(raw))
+    load(sales, cancellations, cancelled_sales, TARGET)
 
     guests = int(sales["customer_id"].isna().sum())
     print("\nResult")
     print(f"  sales rows:          {len(sales):,}")
     print(f"  cancellation rows:   {len(cancellations):,}")
+    print(f"  cancelled sales:     {len(cancelled_sales):,} (GBP {cancelled_sales['revenue'].sum():,.2f})")
     print(f"  guest sales rows:    {guests:,} (no Customer ID)")
     print(f"  non-product rows:    {int((sales['is_product'] == 0).sum()):,}")
     print(f"  customers:           {sales['customer_id'].nunique():,}")

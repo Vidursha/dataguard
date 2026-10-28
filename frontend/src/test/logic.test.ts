@@ -41,9 +41,9 @@ describe('roles come from granted scopes', () => {
 
 describe('formatting', () => {
   it('uses GBP and en-GB conventions', () => {
-    expect(formatGBP(20434356.35)).toBe('£20,434,356')
-    expect(formatGBP(510.97, true)).toBe('£510.97')
-    expect(formatNumber(1007826)).toBe('1,007,826')
+    expect(formatGBP(19725087.52)).toBe('£19,725,088')
+    expect(formatGBP(497.62, true)).toBe('£497.62')
+    expect(formatNumber(1001424)).toBe('1,001,424')
     expect(formatPercent(0.8501)).toBe('85%')
     expect(formatMonth('2010-11')).toBe('Nov 2010')
     expect(formatDateTime('2010-10-31 14:20:00')).toBe('31 Oct 2010, 14:20')

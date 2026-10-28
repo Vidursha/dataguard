@@ -43,8 +43,8 @@
 
 *Point at the KPI cards, then the chart. Click the **2011** quick range.*
 
-> "This is real data: about one million cleaned transactions, twenty million
-> pounds of revenue. Every number on this page came through the WSO2 gateway on
+> "This is real data: about one million cleaned transactions, nearly twenty
+> million pounds of revenue after removing cancelled orders. Every number on this page came through the WSO2 gateway on
 > port 8243 with my token attached. Here's the monthly trend. You can see the
 > November peaks before Christmas. I can filter by date range."
 

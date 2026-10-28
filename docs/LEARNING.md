@@ -72,10 +72,13 @@ Then it:
 2. removes rows that are not real sales: missing descriptions, zero or negative
    quantity or price, bad-debt adjustments, bank and Amazon fees, test items;
 3. removes exact duplicate lines;
-4. adds `revenue = quantity × price`;
-5. marks postage, carriage and vouchers as "not a product", so they count as
+4. moves every sale that a later cancellation exactly reverses (same customer,
+   same item, same quantity) into a `cancelled_sales` table, so an order that
+   was cancelled ten minutes later doesn't count as revenue;
+5. adds `revenue = quantity × price`;
+6. marks postage, carriage and vouchers as "not a product", so they count as
    revenue but not as best sellers;
-6. writes everything to SQLite and adds **indexes** on date, customer and
+7. writes everything to SQLite and adds **indexes** on date, customer and
    country (an index is like a book's index: it lets the database jump to the
    right rows instead of reading all one million).
 

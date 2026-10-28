@@ -9,15 +9,15 @@ import { KpiCard } from '../components/ui'
 
 describe('KpiCard', () => {
   it('shows the label, value and hint', () => {
-    render(<KpiCard label="Total revenue" value="£20,434,356" hint="All data" />)
+    render(<KpiCard label="Total revenue" value="£19,725,088" hint="All data" />)
     expect(screen.getByText('Total revenue')).toBeInTheDocument()
-    expect(screen.getByText('£20,434,356')).toBeInTheDocument()
+    expect(screen.getByText('£19,725,088')).toBeInTheDocument()
     expect(screen.getByText('All data')).toBeInTheDocument()
   })
 
   it('shows a skeleton instead of a value while loading', () => {
-    const { container } = render(<KpiCard label="Orders" value="39,991" loading />)
-    expect(screen.queryByText('39,991')).not.toBeInTheDocument()
+    const { container } = render(<KpiCard label="Orders" value="39,639" loading />)
+    expect(screen.queryByText('39,639')).not.toBeInTheDocument()
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
   })
 })
