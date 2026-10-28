@@ -78,6 +78,22 @@ reproduces every number below.
   are kept as they are; inventing a country would be worse than reporting the
   value the shop recorded.
 
+## Known caveat: cancelled orders are not netted out
+
+As the brief specifies, cancellations are moved to their own table rather than
+subtracted from the sales they reverse. The original sale therefore stays in
+`sales`. For most orders this makes little difference, but two famous outliers
+in this dataset are visible:
+
+| Sale | Cancellation | Effect |
+|---|---|---|
+| Invoice 581483, 9 Dec 2011, 80,995 x "PAPER CRAFT, LITTLE BIRDIE" (£168,470), customer 16446 | C581484, 12 minutes later, -80,995 | Ranks 4th in top products from a single order |
+| Invoice 541431, 18 Jan 2011, 74,215 x "MEDIUM CERAMIC TOP STORAGE JAR" (£77,184), customer 12346 | C541433, 16 minutes later, -74,215 | Ranks 8th in top products from a single order |
+
+Netting cancellations against their original lines (matching customer, stock
+code and quantity) is a natural next improvement; the `cancellations` table
+already holds everything needed for it.
+
 ## Standardized types
 
 | Column | Type in SQLite | Notes |

@@ -191,7 +191,7 @@ cd ..
 venv\Scripts\python scripts\security_tests.py
 ```
 
-### Security test results (live run)
+### Security test results (live run, 28 October 2026)
 
 | Check | Expected | Actual | Result |
 |---|---|---|---|
@@ -204,7 +204,11 @@ venv\Scripts\python scripts\security_tests.py
 | CORS preflight from the dashboard origin | allowed (http://localhost:5173) | http://localhost:5173 | PASS |
 | CORS preflight from an unknown origin | blocked (origin not echoed) | (none) | PASS |
 | MCP server lists only allowed tools | 4 tools, no customer tool | getMonthlySales, getRevenueByCountry, getSalesSummary, getTopProducts | PASS |
-| Burst of requests from the AI Agent app | 429 after the 10/min limit | 429 after 10 OK | PASS |
+| Burst of requests from the AI Agent app | 429 after the 10/min limit | 429 after 12 OK | PASS |
+
+Limits are counted in fixed one-minute windows, so a burst that crosses a window
+boundary can get a couple of extra requests through before the 429 (runs during
+the build saw 10, 12 and 17).
 
 ## Dataset
 
@@ -252,6 +256,10 @@ I reviewed the work and studied how every part fits together;
 - In API Manager 4.6.0, calling a tool name that doesn't exist returns a 500
   fault instead of a JSON-RPC error (no data is exposed).
 - AI agent tokens last one hour and must be refreshed by hand for MCP clients.
+- Cancellations are kept in their own table rather than netted against the
+  sales they reverse (as specified), so two large orders that were cancelled
+  minutes later still count as sales and appear in the top products (see
+  [docs/data-quality.md](docs/data-quality.md)).
 - The dataset is historical (2009 to 2011), so figures don't change.
 
 ## Future work
