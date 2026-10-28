@@ -1,0 +1,16 @@
+venv/
+data/
+*.db
+__pycache__/
+.ipynb_checkpoints/node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.db.tmp
+*.log
+.pytest_cache/
+.vite/
+*.tsbuildinfo
+wso2/.state/
