@@ -1,0 +1,11 @@
+<!-- DataGuard audit log (response flow). level="custom" logs ONLY the properties
+     listed here: never headers, tokens, the gateway secret or message bodies. -->
+<log level="custom" category="INFO">
+    <property name="DATAGUARD_AUDIT" value="v1"/>
+    <property name="correlationId" expression="get-property('correlation_id')"/>
+    <property name="method" expression="get-property('api.ut.HTTP_METHOD')"/>
+    <property name="path" expression="get-property('REST_FULL_REQUEST_PATH')"/>
+    <property name="status" expression="$axis2:HTTP_SC"/>
+    <property name="application" expression="get-property('api.ut.application.name')"/>
+    <property name="user" expression="get-property('api.ut.userId')"/>
+</log>

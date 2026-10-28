@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import api  # noqa: E402
 import apps  # noqa: E402
+import audit  # noqa: E402
 import export_openapi  # noqa: E402
 import mcp  # noqa: E402
 import policies  # noqa: E402
@@ -36,7 +37,8 @@ def main() -> int:
     policies.run(client)
     api_id = api.run(client, spec)
     app_ids = apps.run(client, api_id)
-    mcp.run(client, api_id, app_ids[AI_AGENT_APP])
+    mcp_id = mcp.run(client, api_id, app_ids[AI_AGENT_APP])
+    audit.run(api_id, mcp_id)
 
     step("Done")
     print("   Restart the backend if GATEWAY_SHARED_SECRET changed, then run scripts\\security_tests.py.")

@@ -1,0 +1,11 @@
+{
+  "category": "Mediation",
+  "name": "dataguardAuditLog",
+  "version": "v1",
+  "displayName": "DataGuard audit log",
+  "description": "Writes one audit line per response: method, path, status, application, user and correlation ID. Never logs headers, tokens, the gateway secret or bodies.",
+  "policyAttributes": [],
+  "applicableFlows": ["response"],
+  "supportedGateways": ["Synapse"],
+  "supportedApiTypes": ["HTTP"]
+}

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import httpx
 
+import audit
 from common import (
     API_CONTEXT, API_DISPLAY_NAME, API_NAME, API_VERSION, BACKEND_URL, FRONTEND_ORIGIN,
     GATEWAY_SECRET_HEADER, MGMT_URL, PUBLISHER, ApiError, Client, env, find_one, info, step,
@@ -146,15 +147,16 @@ def configure(client: Client, api_id: str) -> None:
     }
     # API-level request policy: the gateway adds the shared secret on every backend call.
     header = add_header_policy(client)
+    # Response policy: one audit line per request (see audit.py); never logs headers or bodies.
     api["apiPolicies"] = {
         "request": [{**header, "parameters": {"headerName": GATEWAY_SECRET_HEADER, "headerValue": secret}}],
-        "response": [],
+        "response": [audit.ensure_audit_policy(client, api_id)],
         "fault": [],
     }
     api["policies"] = ["Unlimited"]
     client.put(f"{PUBLISHER}/apis/{api_id}", json=api)
     info("scopes sales:read (analyst, manager) and customer:read (manager) bound to operations")
-    info(f"CORS limited to {FRONTEND_ORIGIN}; shared-secret header policy attached")
+    info(f"CORS limited to {FRONTEND_ORIGIN}; shared-secret header and audit-log policies attached")
 
 
 def deploy(client: Client, base: str, label: str) -> None:

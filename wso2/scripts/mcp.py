@@ -74,7 +74,7 @@ def subscribe_agent(server_id: str, agent_app_id: str) -> None:
     ensure_subscription(agent_client(), agent_app_id, AI_AGENT_APP, server_id, "DataGuard Sales MCP")
 
 
-def run(client: Client, api_id: str, agent_app_id: str) -> None:
+def run(client: Client, api_id: str, agent_app_id: str) -> str:
     step("MCP server (AI tools)")
     api = client.get(f"{PUBLISHER}/apis/{api_id}")
     server_id = ensure_server(client, api)
@@ -83,3 +83,4 @@ def run(client: Client, api_id: str, agent_app_id: str) -> None:
     deploy_and_publish(client, server_id)
     subscribe_agent(server_id, agent_app_id)
     info(f"MCP endpoint: {GATEWAY_URL}{MCP_CONTEXT}/{MCP_VERSION}/mcp")
+    return server_id

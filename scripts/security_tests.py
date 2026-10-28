@@ -15,7 +15,10 @@ self-signed certificate.
 
 from __future__ import annotations
 
+import os
+import re
 import sys
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,6 +35,9 @@ BACKEND = "http://127.0.0.1:8000"
 FRONTEND_ORIGIN = "http://localhost:5173"
 UNKNOWN_ORIGIN = "https://evil.example"
 ALLOWED_TOOLS = {"getSalesSummary", "getMonthlySales", "getRevenueByCountry", "getTopProducts"}
+LOG_DIR = Path(os.environ.get("WSO2_HOME", r"C:\wso2am-4.6.0")) / "repository" / "logs"
+API_LOG = LOG_DIR / "api.log"            # per-API log, level BASIC
+CARBON_LOG = LOG_DIR / "wso2carbon.log"  # holds the DATAGUARD_AUDIT lines
 
 http = httpx.Client(verify=False, timeout=30)  # local self-signed certificate only
 
@@ -126,6 +132,55 @@ def check_mcp_tools(tokens: dict) -> Result:
     return Result("MCP server lists only allowed tools", "4 tools, no customer tool", ", ".join(sorted(tools)), ok)
 
 
+def log_size(path: Path) -> int:
+    return path.stat().st_size if path.exists() else 0
+
+
+def read_new(path: Path, offset: int) -> str:
+    """Log text written since `offset` (the file size when the run started)."""
+    if not path.exists():
+        return ""
+    with path.open("rb") as handle:
+        handle.seek(offset if log_size(path) >= offset else 0)  # the file may have rolled over
+        return handle.read().decode("utf-8", errors="replace")
+
+
+AUDIT_LINE = re.compile(
+    r"DATAGUARD_AUDIT = v1, correlationId = [0-9a-f-]{36}, method = GET, "
+    r"path = /dataguard/1\.0\.0/customers/12347/summary, status = 200, application = Dashboard, user = \S+"
+)
+BASIC_403 = re.compile(r'"verb":"GET".*"apiTo":"/dataguard/1\.0\.0/customers/12347/summary".*"statusCode":403')
+
+
+def check_logging(offsets: dict) -> Result:
+    """The manager's lookup has an audit line; the analyst's 403 is in api.log."""
+    deadline = time.time() + 20  # the gateway writes logs asynchronously
+    while True:
+        audit_ok = bool(AUDIT_LINE.search(read_new(CARBON_LOG, offsets["carbon"])))
+        basic_ok = bool(BASIC_403.search(read_new(API_LOG, offsets["api"])))
+        if (audit_ok and basic_ok) or time.time() > deadline:
+            break
+        time.sleep(1)
+    actual = f"audit line: {'yes' if audit_ok else 'no'}; 403 in api.log: {'yes' if basic_ok else 'no'}"
+    return Result("Gateway logs record method, path, status, app, user", "both present", actual, audit_ok and basic_ok)
+
+
+def check_logs_clean(offsets: dict, tokens: dict, secret: str) -> Result:
+    """Neither log may contain the gateway secret (whole file) or this run's tokens."""
+    findings = []
+    for name, path in (("api.log", API_LOG), ("wso2carbon.log", CARBON_LOG)):
+        if not path.exists():
+            return Result("Logs contain no secret or tokens", "none found", f"{name} not found in {LOG_DIR}", False)
+        whole = path.read_text(encoding="utf-8", errors="replace")
+        if secret and secret in whole:
+            findings.append(f"secret in {name}")
+        new = read_new(path, offsets["api" if path == API_LOG else "carbon"])
+        findings += [f"{who} token in {name}" for who, token in tokens.items() if token in new]
+        if re.search(r"Authorization=|X-DataGuard-Gateway-Secret=", new):
+            findings.append(f"header dump in {name}")
+    return Result("Logs contain no secret or tokens", "none found", ", ".join(findings) or "none found", not findings)
+
+
 def check_agent_burst(tokens: dict) -> Result:
     statuses = []
     for _ in range(25):
@@ -140,6 +195,7 @@ def check_agent_burst(tokens: dict) -> Result:
 
 def run() -> list[Result]:
     values = settings()
+    offsets = {"api": log_size(API_LOG), "carbon": log_size(CARBON_LOG)}
     print("Getting real tokens from WSO2 (PKCE sign-in for analyst1 and manager1, client credentials for AI Agent)...")
     tokens = {
         "analyst": user_token("analyst1", values["ANALYST1_PASSWORD"])["access_token"],
@@ -156,6 +212,8 @@ def run() -> list[Result]:
         check_cors_allowed,
         check_cors_blocked,
         lambda: check_mcp_tools(tokens),
+        lambda: check_logging(offsets),
+        lambda: check_logs_clean(offsets, tokens, values.get("GATEWAY_SHARED_SECRET", "")),
         lambda: check_agent_burst(tokens),  # last: it uses up the agent's allowance for a minute
     ]
     results = []

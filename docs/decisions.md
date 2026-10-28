@@ -36,8 +36,15 @@ as future work for a multi-user deployment.
 ## 2. Data cleaning rules
 
 **Decision:** Drop the 22,523 rows duplicated across the two sheets, move
-cancellations to their own table, remove non-sales rows, keep guest purchases.
-Details and counts are in [data-quality.md](data-quality.md).
+cancellations to their own table, remove non-sales rows, keep guest purchases,
+and move sales that a cancellation exactly reverses (same customer, item and
+absolute quantity, cancelled later; matched one-to-one) into a
+`cancelled_sales` table. Details and counts are in [data-quality.md](data-quality.md).
+
+**Why exact matching only:** 6,402 sales (£709,268.83) are exact reversals,
+including two single orders of 80,995 and 74,215 units cancelled minutes later,
+which otherwise ranked among the top products. Partial returns are left alone:
+netting them would mean guessing which sale to reduce and by how much.
 
 **Why:** The two sheets overlap for 1-9 December 2010 with identical rows;
 counting both would inflate that month. Postage, carriage and gift vouchers are
@@ -280,6 +287,78 @@ one is created. The admin token comes from a DCR client registered under a
 fixed name, which DCR returns again on re-runs. Verified by running
 `setup_all.py` repeatedly against the same server.
 
+## 14a. Request logging without secrets
+
+**Requirement:** record who called what and with what result (method, path,
+status, application/user, time), but never the gateway secret, tokens or
+customer data in response bodies.
+
+**What API Manager 4.6.0 offers.** Per-API logging (DevOps REST API,
+`/api/am/devops/v0/tenant-logs/carbon.super/apis/{apiId}`) writes to
+`repository/logs/api.log` at four levels. I tested them against the live
+gateway:
+
+| Level | What it writes | Verdict |
+|---|---|---|
+| `OFF` | nothing | not enough |
+| `BASIC` | timestamp, method, path with query, status code, source IP, correlation ID, for every request including 401/403/429 | **used**: no headers, no bodies |
+| `STANDARD` | BASIC plus **all request and response headers**: the `Authorization` bearer token *and* the `X-DataGuard-Gateway-Secret` header | rejected |
+| `FULL` | STANDARD plus message bodies (customer data) | rejected |
+
+BASIC is the lowest level that records method, path, status and time, but it
+has **no application or user**. Every level that does carry identity does so
+only by dumping headers. The other built-in options didn't fit either: the
+`backEndJWT` policy is for Choreo Connect only, enabling backend JWT or
+analytics on the Synapse gateway needs `deployment.toml` changes, and the
+existing `http_access.log` records no status code.
+
+**Decision: two layers, both set by `wso2/scripts/audit.py` through REST APIs**
+(no API Manager configuration files changed):
+
+1. **Per-API log level BASIC** on the DataGuard API and the MCP server.
+2. **A custom operation policy, `dataguardAuditLog`** (`wso2/policies/`),
+   uploaded through the Publisher API and attached to the API's response flow.
+   It uses the Synapse log mediator's `custom` level, which writes *only* the
+   named properties, one line per request to `repository/logs/wso2carbon.log`:
+
+   ```
+   DATAGUARD_AUDIT = v1, correlationId = 8c7b3df4-..., method = GET,
+   path = /dataguard/1.0.0/customers/12347/summary, status = 200,
+   application = Dashboard, user = 7c82338a-...@carbon.super
+   ```
+
+The correlation ID is the same in both files, so the two lines for one
+request can be joined.
+
+**Limits, stated honestly:**
+- Requests the gateway rejects before the API's policies run (401, 403, 429)
+  appear in `api.log` with their status, but get no audit line, so their
+  application and user aren't recorded there. For 403 scope failures,
+  API Manager's `wso2-apigw-errors.log` also names the application.
+- MCP tool calls are recorded with user `ai-agent-svc` and application
+  `internal-key-app`, which is API Manager's internal hop from the MCP server
+  to the API.
+- People appear by user ID (a UUID), as in their tokens (see #12).
+- Paths include customer numbers (e.g. `/customers/12347/summary`), because
+  "who looked up which customer" is exactly what an audit log is for. They are
+  pseudonymous IDs with no names attached.
+
+**Incident during testing.** While comparing levels, one request at STANDARD
+wrote a bearer token and the then-current gateway secret into `api.log`. I
+didn't edit API Manager's log files. Instead I revoked the test tokens (they
+also expire within an hour) and **rotated the gateway secret** (new value in
+`.env`, pushed to the gateway by `setup_all.py`, backend restarted), so the
+logged values are useless. The level was set back to BASIC straight away.
+
+**Verified automatically:** `scripts/security_tests.py` checks that the
+manager's lookup produces an audit line with all fields, that the analyst's
+403 is in `api.log`, and that neither log file contains the current gateway
+secret, any token used in the run, or a header dump.
+
+**Future work:** full analytics dashboards (Moesif, or OpenSearch/ELK on top
+of API Manager's analytics events) for usage, latency and per-application
+trends, plus log shipping and retention policies.
+
 ## 15. Frontend stack and design system
 
 React 19 + TypeScript 7 + Vite 8, Tailwind CSS 3.4 (so design tokens live in
@@ -296,13 +375,14 @@ pages are lazy-loaded so the charting library is not in the first download.
 
 ## 16. Testing approach
 
-- **Backend (pytest, 58 tests):** a small hand-built database with known
+- **Backend (pytest, 59 tests):** a small hand-built database with known
   totals, so each assertion is exact; gateway-secret checks; cleaning rules.
 - **Frontend unit (Vitest + Testing Library, 31 tests):** all network calls
   mocked; tests for the 403 and 429 panels use the exact error bodies API
   Manager returns.
-- **Live security (`scripts/security_tests.py`, 10 checks):** real tokens,
-  obtained through the real login page with PKCE, against the real gateway.
+- **Live security (`scripts/security_tests.py`, 12 checks):** real tokens,
+  obtained through the real login page with PKCE, against the real gateway,
+  including the two log checks (see 14a).
 - **Live UI (`npm run e2e`, Playwright with the Edge already installed on
   Windows):** signs in through the WSO2 login page as analyst and manager,
   checks the real 403, 200 and 429 in the dashboard and the 375 px dark
