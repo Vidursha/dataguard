@@ -20,15 +20,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
+              "format": "date",
               "description": "First day to include, YYYY-MM-DD (inclusive). Omit for no lower bound.",
               "examples": [
                 "2010-01-01"
@@ -42,15 +35,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
+              "format": "date",
               "description": "Last day to include, YYYY-MM-DD (inclusive). Omit for no upper bound.",
               "examples": [
                 "2010-12-31"
@@ -118,15 +104,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
+              "format": "date",
               "description": "First day to include, YYYY-MM-DD (inclusive). Omit for no lower bound.",
               "examples": [
                 "2010-01-01"
@@ -140,15 +119,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
+              "format": "date",
               "description": "Last day to include, YYYY-MM-DD (inclusive). Omit for no upper bound.",
               "examples": [
                 "2010-12-31"
