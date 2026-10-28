@@ -1,0 +1,844 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DataGuard Sales API",
+    "description": "Read-only sales analytics for a UK online gift retailer\n(UCI Online Retail II data, December 2009 to December 2011, amounts in GBP).\nCancelled orders are excluded from every figure. Guest purchases (no customer\nnumber) count towards sales totals but never appear in customer endpoints.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/sales/summary": {
+      "get": {
+        "tags": [
+          "Sales"
+        ],
+        "summary": "Get total revenue, orders and average order value",
+        "description": "Headline sales figures for an optional date range: total revenue in GBP, number of orders (invoices), average order value, distinct registered customers and units sold. Use this for questions like 'How much did we sell in 2010?'.",
+        "operationId": "getSalesSummary",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "First day to include, YYYY-MM-DD (inclusive). Omit for no lower bound.",
+              "examples": [
+                "2010-01-01"
+              ],
+              "title": "From"
+            },
+            "description": "First day to include, YYYY-MM-DD (inclusive). Omit for no lower bound."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Last day to include, YYYY-MM-DD (inclusive). Omit for no upper bound.",
+              "examples": [
+                "2010-12-31"
+              ],
+              "title": "To"
+            },
+            "description": "Last day to include, YYYY-MM-DD (inclusive). Omit for no upper bound."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or path parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request did not come through the WSO2 gateway.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sales/monthly": {
+      "get": {
+        "tags": [
+          "Sales"
+        ],
+        "summary": "Get revenue and orders per month",
+        "description": "Revenue in GBP and number of orders for each calendar month in an optional date range, oldest first. Use this for trends and questions like 'Which month had the most sales?'.",
+        "operationId": "getMonthlySales",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "First day to include, YYYY-MM-DD (inclusive). Omit for no lower bound.",
+              "examples": [
+                "2010-01-01"
+              ],
+              "title": "From"
+            },
+            "description": "First day to include, YYYY-MM-DD (inclusive). Omit for no lower bound."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Last day to include, YYYY-MM-DD (inclusive). Omit for no upper bound.",
+              "examples": [
+                "2010-12-31"
+              ],
+              "title": "To"
+            },
+            "description": "Last day to include, YYYY-MM-DD (inclusive). Omit for no upper bound."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthlySales"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or path parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request did not come through the WSO2 gateway.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sales/by-country": {
+      "get": {
+        "tags": [
+          "Sales"
+        ],
+        "summary": "Get revenue per country",
+        "description": "Countries ranked by revenue in GBP (highest first) with order counts and each country's share of total revenue, over the whole data period. Use this for questions like 'Which countries buy the most?'.",
+        "operationId": "getRevenueByCountry",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "How many countries to return (1-50).",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "How many countries to return (1-50)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountryBreakdown"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or path parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request did not come through the WSO2 gateway.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/top": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Get best-selling products",
+        "description": "Products ranked by revenue in GBP (highest first) with units sold and order counts, over the whole data period. Postage, carriage, samples and gift vouchers are excluded. Use this for questions like 'What are our best sellers?'.",
+        "operationId": "getTopProducts",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "How many products to return (1-50).",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "How many products to return (1-50)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopProducts"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or path parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request did not come through the WSO2 gateway.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers/{customer_id}/summary": {
+      "get": {
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Get one customer's order history summary",
+        "description": "Orders, lifetime spend, units bought, average order value and first and last order dates for one registered customer. Requires the customer:read scope. Guest purchases have no customer number and are never returned.",
+        "operationId": "getCustomerSummary",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 99999999,
+              "minimum": 1,
+              "description": "Customer number, e.g. 12347.",
+              "title": "Customer Id"
+            },
+            "description": "Customer number, e.g. 12347."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or path parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request did not come through the WSO2 gateway.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No registered customer with this ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CountryBreakdown": {
+        "properties": {
+          "total_revenue": {
+            "type": "number",
+            "title": "Total Revenue",
+            "description": "Revenue in GBP across all countries."
+          },
+          "countries": {
+            "items": {
+              "$ref": "#/components/schemas/CountryRevenue"
+            },
+            "type": "array",
+            "title": "Countries",
+            "description": "Countries ranked by revenue, highest first."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_revenue",
+          "countries"
+        ],
+        "title": "CountryBreakdown"
+      },
+      "CountryRevenue": {
+        "properties": {
+          "country": {
+            "type": "string",
+            "title": "Country",
+            "description": "Customer country as recorded by the retailer."
+          },
+          "revenue": {
+            "type": "number",
+            "title": "Revenue",
+            "description": "Revenue in GBP."
+          },
+          "orders": {
+            "type": "integer",
+            "title": "Orders",
+            "description": "Distinct invoices."
+          },
+          "share": {
+            "type": "number",
+            "title": "Share",
+            "description": "Share of all revenue, between 0 and 1."
+          }
+        },
+        "type": "object",
+        "required": [
+          "country",
+          "revenue",
+          "orders",
+          "share"
+        ],
+        "title": "CountryRevenue"
+      },
+      "CustomerSummary": {
+        "properties": {
+          "customer_id": {
+            "type": "integer",
+            "title": "Customer Id",
+            "description": "Anonymous customer number."
+          },
+          "country": {
+            "type": "string",
+            "title": "Country",
+            "description": "Country on the customer's most recent order."
+          },
+          "orders": {
+            "type": "integer",
+            "title": "Orders",
+            "description": "Distinct invoices placed."
+          },
+          "total_spend": {
+            "type": "number",
+            "title": "Total Spend",
+            "description": "Lifetime spend in GBP."
+          },
+          "units_bought": {
+            "type": "integer",
+            "title": "Units Bought",
+            "description": "Total items bought."
+          },
+          "average_order_value": {
+            "type": "number",
+            "title": "Average Order Value",
+            "description": "total_spend / orders in GBP."
+          },
+          "first_order": {
+            "type": "string",
+            "title": "First Order",
+            "description": "Date and time of the first order (YYYY-MM-DD HH:MM:SS)."
+          },
+          "last_order": {
+            "type": "string",
+            "title": "Last Order",
+            "description": "Date and time of the most recent order (YYYY-MM-DD HH:MM:SS)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "country",
+          "orders",
+          "total_spend",
+          "units_bought",
+          "average_order_value",
+          "first_order",
+          "last_order"
+        ],
+        "title": "CustomerSummary"
+      },
+      "DateRange": {
+        "properties": {
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start",
+            "description": "First day included (inclusive), or null if unbounded."
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End",
+            "description": "Last day included (inclusive), or null if unbounded."
+          }
+        },
+        "type": "object",
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "DateRange"
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "Machine-readable error code, e.g. 'invalid_request'."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Human-readable explanation."
+          },
+          "details": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details",
+            "description": "Per-field problems for validation errors."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorBody"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "'ok' when the API and database are reachable."
+          },
+          "database": {
+            "type": "string",
+            "title": "Database",
+            "description": "'ok' or 'unavailable'."
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "database"
+        ],
+        "title": "Health"
+      },
+      "MonthlyPoint": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month",
+            "description": "Calendar month as YYYY-MM.",
+            "examples": [
+              "2010-11"
+            ]
+          },
+          "revenue": {
+            "type": "number",
+            "title": "Revenue",
+            "description": "Revenue in GBP for the month."
+          },
+          "orders": {
+            "type": "integer",
+            "title": "Orders",
+            "description": "Distinct invoices in the month."
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "revenue",
+          "orders"
+        ],
+        "title": "MonthlyPoint"
+      },
+      "MonthlySales": {
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/DateRange"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/MonthlyPoint"
+            },
+            "type": "array",
+            "title": "Months",
+            "description": "One entry per month that has sales, oldest first."
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "months"
+        ],
+        "title": "MonthlySales"
+      },
+      "ProductSales": {
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "title": "Rank",
+            "description": "Position in the ranking, starting at 1."
+          },
+          "stock_code": {
+            "type": "string",
+            "title": "Stock Code",
+            "description": "Retailer's product code."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Most recent product name used on invoices."
+          },
+          "units_sold": {
+            "type": "integer",
+            "title": "Units Sold",
+            "description": "Total items sold."
+          },
+          "revenue": {
+            "type": "number",
+            "title": "Revenue",
+            "description": "Revenue in GBP."
+          },
+          "orders": {
+            "type": "integer",
+            "title": "Orders",
+            "description": "Distinct invoices containing the product."
+          }
+        },
+        "type": "object",
+        "required": [
+          "rank",
+          "stock_code",
+          "description",
+          "units_sold",
+          "revenue",
+          "orders"
+        ],
+        "title": "ProductSales"
+      },
+      "SalesSummary": {
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/DateRange"
+          },
+          "total_revenue": {
+            "type": "number",
+            "title": "Total Revenue",
+            "description": "Sum of quantity x unit price in GBP, cancellations excluded."
+          },
+          "orders": {
+            "type": "integer",
+            "title": "Orders",
+            "description": "Number of distinct invoices."
+          },
+          "average_order_value": {
+            "type": "number",
+            "title": "Average Order Value",
+            "description": "total_revenue / orders in GBP (0 when there are no orders)."
+          },
+          "customers": {
+            "type": "integer",
+            "title": "Customers",
+            "description": "Distinct registered customers who ordered. Guest purchases are not counted."
+          },
+          "units_sold": {
+            "type": "integer",
+            "title": "Units Sold",
+            "description": "Total number of items sold."
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "total_revenue",
+          "orders",
+          "average_order_value",
+          "customers",
+          "units_sold"
+        ],
+        "title": "SalesSummary"
+      },
+      "TopProducts": {
+        "properties": {
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/ProductSales"
+            },
+            "type": "array",
+            "title": "Products",
+            "description": "Products ranked by revenue, highest first."
+          }
+        },
+        "type": "object",
+        "required": [
+          "products"
+        ],
+        "title": "TopProducts"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
