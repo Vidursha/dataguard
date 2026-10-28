@@ -250,7 +250,7 @@ provider in the management console (not possible through the REST APIs).
 **Decision:** The dashboard shows the user ID and the role. The role is read
 from the granted scopes, which identifies it exactly, because WSO2 only grants
 `customer:read` to managers. If a `username` or `preferred_username` claim is
-ever released (optional step in [manual-steps.md](manual-steps.md)), the UI
+ever released (by adding a username claim in the API Manager console), the UI
 shows it automatically.
 
 ## 13. MCP server generated from the existing API

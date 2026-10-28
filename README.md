@@ -166,8 +166,9 @@ python wso2\scripts\setup_all.py
 cd frontend && npm install && cd ..
 ```
 
-Then accept the local certificate in your browser once (see
-[docs/manual-steps.md](docs/manual-steps.md), step 1).
+Then accept the local certificate in your browser once: open
+https://localhost:9443/devportal and https://localhost:8243/, and at each
+warning click **Advanced** and then **Continue to localhost (unsafe)**.
 
 **Every day after that:** `scripts\start_all.cmd` starts API Manager, waits
 until it answers, then opens the backend and the dashboard in their own windows.
@@ -273,8 +274,8 @@ I built this project with help from Claude Code, an AI coding assistant.
 - The PKCE token exchange goes through the Vite dev server because API
   Manager's token endpoint sends no CORS headers by default (decisions.md #10);
   the dashboard is not meant to be deployed as static files as-is.
-- The dashboard shows a user ID instead of a username unless the optional
-  claim step in manual-steps.md is done.
+- The dashboard shows a user ID instead of a username, because API Manager
+  4.6.0 doesn't put the username in its tokens by default.
 - Rate limiting counts in fixed one-minute windows, so a burst crossing a
   minute boundary can briefly exceed the nominal limit.
 - In API Manager 4.6.0, calling a tool name that doesn't exist returns a 500
@@ -303,8 +304,6 @@ I built this project with help from Claude Code, an AI coding assistant.
 
 - [docs/decisions.md](docs/decisions.md): every important decision and why
 - [docs/LEARNING.md](docs/LEARNING.md): how the system works, step by step, with interview questions
-- [docs/demo-script.md](docs/demo-script.md): 5-minute demo video script
-- [docs/manual-steps.md](docs/manual-steps.md): what you do by hand (certificates, AI assistant)
 - [docs/data-quality.md](docs/data-quality.md): before/after row counts and cleaning rules
 
 ## Publishing to GitHub

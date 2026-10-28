@@ -12,7 +12,7 @@ export interface Session {
   scopes: string[]
   /** The user ID ("sub") from the access token. */
   subject: string
-  /** Username, if WSO2 is set up to send it (see docs/manual-steps.md). */
+  /** Username, if WSO2 is set up to send it. */
   username?: string
 }
 
