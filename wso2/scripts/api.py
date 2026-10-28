@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import copy
 import json
 from pathlib import Path
 
+import httpx
+
 from common import (
     API_CONTEXT, API_DISPLAY_NAME, API_NAME, API_VERSION, BACKEND_URL, FRONTEND_ORIGIN,
-    GATEWAY_SECRET_HEADER, PUBLISHER, Client, env, find_one, info, step,
+    GATEWAY_SECRET_HEADER, MGMT_URL, PUBLISHER, ApiError, Client, env, find_one, info, step,
 )
+
+# OAuth2 Scope Management API of the Resident Key Manager (WSO2 Identity Server API).
+KM_SCOPES = f"{MGMT_URL}/api/identity/oauth2/v1.0/scopes"
 
 SCOPES = {
     "sales:read": ("Read sales data", "Aggregated sales, product and country figures.", ["analyst", "manager"]),
@@ -25,8 +31,65 @@ def find_api(client: Client) -> dict | None:
     return find_one(result["list"], name=API_NAME, version=API_VERSION)
 
 
+def wso2_definition(spec_path: Path) -> bytes:
+    """The backend's OpenAPI spec plus WSO2's own scope extensions.
+
+    API Manager stores scopes and their role bindings inside the API
+    definition (securitySchemes.default with x-scopes-bindings, plus a
+    security entry per operation). Uploading a definition without them makes
+    API Manager detach the scopes and delete them from the key manager, so
+    they are always included here.
+    """
+    spec = copy.deepcopy(json.loads(spec_path.read_text(encoding="utf-8")))
+    spec.setdefault("components", {})["securitySchemes"] = {
+        "default": {
+            "type": "oauth2",
+            "flows": {"implicit": {
+                "authorizationUrl": f"{MGMT_URL}/oauth2/authorize",
+                "scopes": {name: description for name, (_, description, _) in SCOPES.items()},
+                "x-scopes-bindings": {name: ",".join(roles) for name, (_, _, roles) in SCOPES.items()},
+            }},
+        }
+    }
+    for target, path in spec["paths"].items():
+        for operation in path.values():
+            operation["security"] = [{"default": [scope_for(target)]}]
+            operation["x-auth-type"] = "Application & Application User"
+            operation["x-throttling-tier"] = "Unlimited"
+    return json.dumps(spec, indent=2).encode("utf-8")
+
+
+def ensure_key_manager_scopes() -> None:
+    """Make sure each scope exists in the key manager with the right role bindings.
+
+    Token issuance checks these bindings. A scope missing from the key manager
+    has no role check at all, so it would be granted to anyone who asks; this
+    verifies the registration and repairs it if API Manager left it out.
+    """
+    values = env()
+    auth = (values["WSO2_ADMIN_USERNAME"], values["WSO2_ADMIN_PASSWORD"])
+    with httpx.Client(verify=False, timeout=30, auth=auth) as km:  # local self-signed cert only
+        for name, (display, description, roles) in SCOPES.items():
+            current = km.get(f"{KM_SCOPES}/name/{name}")
+            body = {"displayName": display, "description": description, "bindings": roles}
+            if current.status_code == 404:
+                response = km.post(KM_SCOPES, json={"name": name, **body})
+                action = "registered"
+            elif current.status_code == 200 and sorted(current.json().get("bindings") or []) != sorted(roles):
+                response = km.put(f"{KM_SCOPES}/name/{name}", json=body)
+                action = "bindings repaired"
+            elif current.status_code == 200:
+                info(f"key manager scope {name}: bound to {', '.join(roles)}")
+                continue
+            else:
+                raise ApiError(f"Reading scope {name} from the key manager failed: {current.status_code} {current.text}")
+            if response.status_code not in (200, 201):
+                raise ApiError(f"Key manager scope {name} {action} failed: {response.status_code} {response.text}")
+            info(f"key manager scope {name}: {action} ({', '.join(roles)})")
+
+
 def create_or_update(client: Client, spec_path: Path) -> str:
-    spec = spec_path.read_bytes()
+    spec = wso2_definition(spec_path)
     existing = find_api(client)
     if existing:
         api_id = existing["id"]
@@ -125,6 +188,7 @@ def run(client: Client, spec_path: Path) -> str:
     step("DataGuard Sales API")
     api_id = create_or_update(client, spec_path)
     configure(client, api_id)
+    ensure_key_manager_scopes()
     deploy(client, f"{PUBLISHER}/apis/{api_id}", "API")
     publish(client, api_id)
     return api_id
