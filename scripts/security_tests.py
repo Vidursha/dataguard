@@ -127,9 +127,13 @@ def check_mcp_tools(tokens: dict) -> Result:
     if session:
         headers["mcp-session-id"] = session
     listed = http.post(MCP, headers=headers, json={"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
-    tools = {t["name"] for t in listed.json().get("result", {}).get("tools", [])}
-    ok = tools == ALLOWED_TOOLS and not any("customer" in t.lower() for t in tools)
-    return Result("MCP server lists only allowed tools", "4 tools, no customer tool", ", ".join(sorted(tools)), ok)
+    listing = listed.json().get("result", {}).get("tools", [])
+    tools = {t["name"] for t in listing}
+    # Every tool input needs a type, or MCP clients can't build a valid call.
+    typed = all("type" in prop for t in listing for prop in t.get("inputSchema", {}).get("properties", {}).values())
+    ok = tools == ALLOWED_TOOLS and not any("customer" in t.lower() for t in tools) and typed
+    return Result("MCP server lists only allowed tools", "4 tools, no customer tool, typed inputs",
+                  f"{', '.join(sorted(tools))}; typed inputs: {'yes' if typed else 'no'}", ok)
 
 
 def check_mcp_tool_call(tokens: dict) -> Result:

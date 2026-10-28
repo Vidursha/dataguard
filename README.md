@@ -131,8 +131,9 @@ backend/            clean.py (data pipeline), app/ (FastAPI), tests/
 frontend/           React dashboard, src/test (unit tests), e2e/ (live UI tests)
 wso2/               openapi.json (exported spec), scripts/ (API Manager automation)
 scripts/            start_*.cmd, security_tests.py, wso2_auth.py, get_agent_token.py
+tools/mcp-inspector MCP Inspector pinned to a version WSO2 4.6.0 can talk to
 notebooks/          explore.py (data exploration)
-docs/               decisions, learning guide, demo script, manual steps, data quality
+docs/               decisions, learning guide, data quality
 data/               dataset and SQLite database (git-ignored)
 ```
 
@@ -185,6 +186,27 @@ Manager window (or close it).
 > the setup and test scripts turn off TLS certificate verification and the
 > Vite proxy uses `secure: false`. Never do this against a real server.
 
+## Try the AI tools (MCP Inspector)
+
+WSO2 API Manager 4.6.0 only supports MCP protocol `2025-06-18`, so use the
+pinned MCP Inspector in `tools/mcp-inspector` (newer versions can't connect).
+With everything running, in PowerShell:
+
+```powershell
+cd C:\dataguard
+venv\Scripts\python scripts\get_agent_token.py
+cd tools\mcp-inspector
+npm install
+$env:NODE_EXTRA_CA_CERTS = "C:\dataguard\wso2\.state\wso2-localhost.pem"
+npm start
+```
+
+In the page that opens: Transport Type **Streamable HTTP**, URL
+`https://localhost:8243/dataguard-mcp/1.0.0/mcp`, Connection Type **Via Proxy**.
+Under **Authentication**, add a custom header `Authorization` with the value
+`Bearer ` followed by the token, switch it on, and click **Connect**. Then
+**Tools**, **List Tools**, and **Run Tool**. The token lasts one hour.
+
 ## Tests
 
 ```cmd
@@ -217,11 +239,11 @@ venv\Scripts\python scripts\security_tests.py
 | Direct backend call without the secret | 403 (and 403 with a wrong one) | 403 / 403 | PASS |
 | CORS preflight from the dashboard origin | allowed (http://localhost:5173) | http://localhost:5173 | PASS |
 | CORS preflight from an unknown origin | blocked (origin not echoed) | (none) | PASS |
-| MCP server lists only allowed tools | 4 tools, no customer tool | getMonthlySales, getRevenueByCountry, getSalesSummary, getTopProducts | PASS |
+| MCP server lists only allowed tools | 4 tools, no customer tool, typed inputs | getMonthlySales, getRevenueByCountry, getSalesSummary, getTopProducts; typed inputs: yes | PASS |
 | MCP tool call works for standard clients | 200 with data, one Content-Type | 200, 1 Content-Type header(s) | PASS |
 | Gateway logs record method, path, status, app, user | both present | audit line: yes; 403 in api.log: yes | PASS |
 | Logs contain no secret or tokens | none found | none found | PASS |
-| Burst of requests from the AI Agent app | 429 after the 10/min limit | 429 after 9 OK | PASS |
+| Burst of requests from the AI Agent app | 429 after the 10/min limit | 429 after 12 OK | PASS |
 
 Limits are counted in fixed one-minute windows, so a burst that crosses a window
 boundary can get a couple of extra requests through before the 429 (runs during
@@ -281,6 +303,10 @@ I built this project with help from Claude Code, an AI coding assistant.
   minute boundary can briefly exceed the nominal limit.
 - In API Manager 4.6.0, calling a tool name that doesn't exist returns a 500
   fault instead of a JSON-RPC error (no data is exposed).
+- API Manager 4.6.0's MCP gateway only speaks MCP protocol `2025-06-18` and
+  rejects newer clients instead of falling back, so the latest MCP Inspector
+  can't connect. Use the pinned version in `tools/mcp-inspector` (see "Try the
+  AI tools").
 - AI agent tokens last one hour and must be refreshed by hand for MCP clients.
 - The audit log has no application or user for requests the gateway rejects
   (401/403/429), only their status in `api.log` (see "What is logged").

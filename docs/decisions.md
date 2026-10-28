@@ -284,6 +284,25 @@ the backend's `Content-Type`. The gateway still sets its own, so REST responses
 keep exactly one `Content-Type` (checked, including CORS and the 403), and MCP
 tool calls now return one as well. `security_tests.py` checks this on every run.
 
+**Limitation: MCP protocol version.** API Manager 4.6.0's MCP gateway only
+supports MCP protocol `2025-06-18`. Current MCP clients (MCP SDK 1.23.0 and
+later, including the latest MCP Inspector) ask for `2025-11-25`, and instead of
+agreeing on the older version, as the MCP specification expects a server to
+do, the gateway rejects the `initialize` request with "Unsupported protocol
+version". That error reply also carries the duplicate `Content-Type`, so the
+client only reports the header problem. There is no policy hook on MCP servers
+to change this, so the fix is on the client side: `tools/mcp-inspector/`
+installs MCP Inspector 0.17.2 with the MCP SDK pinned to 1.22.0, the last
+release that asks for `2025-06-18`. Upgrading to API Manager 4.7.0 is the
+long-term fix.
+
+**Fix: tool parameter types.** When API Manager builds the tools, it keeps each
+parameter's description but drops its type (`from` had no `"type": "string"`,
+`limit` no `"type": "integer"`). MCP clients then don't know what to send, and
+MCP Inspector couldn't show normal input boxes. `mcp.py` copies the types (and
+the 1 to 50 range for `limit`) from the OpenAPI spec into each tool's stored
+schema, and the security tests check that every tool input has a type.
+
 **Sources:** <https://apim.docs.wso2.com/en/4.6.0/ai-gateway/mcp-gateway/overview/>,
 <https://apim.docs.wso2.com/en/4.6.0/ai-gateway/mcp-gateway/create-from-api/>.
 
