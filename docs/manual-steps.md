@@ -108,13 +108,6 @@ make the dashboard show "analyst1" instead of the ID:
 The dashboard reads a `username` or `preferred_username` claim from the ID
 token when present. This step is optional and not needed for any test.
 
-## 5. Screenshots for the README
-
-The README has a "Screenshots" section with placeholders. After recording,
-save images to `docs\screenshots\` with the file names listed there.
-`npm run e2e` also saves reference screenshots to
-`frontend\e2e-results\screens\` (git-ignored) that you can reuse.
-
-## 6. Push to GitHub when ready
+## 5. Push to GitHub when ready
 
 Nothing has been pushed. See "Publishing to GitHub" in the README.

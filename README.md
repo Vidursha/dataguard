@@ -247,6 +247,23 @@ mode so no endpoint can ever write, and answers every query well within a
 second or two thanks to indexes on date, customer and country. A shared,
 multi-writer deployment would move to PostgreSQL (see future work).
 
+## How AI was used
+
+I built this project with help from Claude Code, an AI coding assistant.
+
+- **What the AI did:** it wrote most of the code, scripts, tests and
+  documentation.
+- **What I did:** I came up with the project idea, chose which WSO2 features
+  to use, and set the requirements and the security rules the project had to
+  follow. I also ran and tested the whole system live myself.
+- **Problems found and fixed:** testing and review turned up real problems.
+  The automated security tests caught WSO2 losing the API's scope settings
+  after a re-import. Review found that cancelled orders were still counted as
+  sales, and that there was no request log. I set the rules for those two
+  fixes, including that the logs must never contain tokens or secrets.
+- **Learning:** I studied the code and [docs/LEARNING.md](docs/LEARNING.md)
+  so I can explain how every part works.
+
 ## Limitations
 
 - Runs locally only, with API Manager's self-signed certificate and the
