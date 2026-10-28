@@ -1,5 +1,6 @@
-"""Response models. Field descriptions end up in the OpenAPI spec, which WSO2
-API Manager and its MCP Gateway turn into API docs and AI tool descriptions."""
+"""Response models for the API. The field descriptions go into the OpenAPI spec,
+and WSO2 uses them for the API docs and for the AI tool descriptions.
+"""
 
 from __future__ import annotations
 

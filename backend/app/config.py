@@ -1,4 +1,4 @@
-"""Runtime settings, read from environment variables and the git-ignored .env file."""
+"""Settings for the backend. They come from environment variables and the .env file (git ignores it)."""
 
 from __future__ import annotations
 
@@ -20,10 +20,10 @@ class Settings:
 
 
 def load_settings() -> Settings:
-    """Load settings, failing fast if the gateway secret is missing or weak.
+    """Load the settings. Stop right away if the gateway secret is missing or too short.
 
-    Starting without a secret would mean either rejecting every request or
-    accepting every request; neither is acceptable, so we refuse to start.
+    If the backend started without a secret, it would have to either block every
+    request or let every request in. Both are wrong, so it just refuses to start.
     """
     load_dotenv(ROOT / ".env")
     secret = os.environ.get("GATEWAY_SHARED_SECRET", "")

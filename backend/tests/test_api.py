@@ -1,4 +1,4 @@
-"""Endpoint behaviour: figures, filters, validation and error format."""
+"""Tests for the endpoints: the numbers, filters, input checks and error format."""
 
 from __future__ import annotations
 
@@ -134,11 +134,11 @@ class TestCustomerSummary:
         assert "999" in error["message"]
 
     def test_guest_purchases_never_appear(self, client):
-        # The guest's March order must not be attributed to any customer.
+        # The guest's March order must not be counted for any customer.
         for cid in (100, 200):
             body = client.get(f"/customers/{cid}/summary").json()
             assert body["last_order"] < "2010-03-01"
-        assert client.get("/sales/summary").json()["total_revenue"] == 128.0  # but it is in sales
+        assert client.get("/sales/summary").json()["total_revenue"] == 128.0  # but it still counts in sales
 
     @pytest.mark.parametrize("cid", ["abc", "0", "-5", "12.5", "null", "100000000"])
     def test_bad_id(self, client, cid):

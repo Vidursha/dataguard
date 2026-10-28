@@ -1,4 +1,4 @@
-"""Create or update, deploy and publish the DataGuard Sales API (Publisher REST API v4)."""
+"""Create or update the DataGuard Sales API, then deploy and publish it (Publisher REST API v4)."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from common import (
     GATEWAY_SECRET_HEADER, MGMT_URL, PUBLISHER, ApiError, Client, env, find_one, info, step,
 )
 
-# OAuth2 Scope Management API of the Resident Key Manager (WSO2 Identity Server API).
+# The key manager's OAuth2 scope API (it comes from WSO2 Identity Server).
 KM_SCOPES = f"{MGMT_URL}/api/identity/oauth2/v1.0/scopes"
 
 SCOPES = {
@@ -33,13 +33,12 @@ def find_api(client: Client) -> dict | None:
 
 
 def wso2_definition(spec_path: Path) -> bytes:
-    """The backend's OpenAPI spec plus WSO2's own scope extensions.
+    """The backend's OpenAPI spec plus WSO2's own scope settings.
 
-    API Manager stores scopes and their role bindings inside the API
-    definition (securitySchemes.default with x-scopes-bindings, plus a
-    security entry per operation). Uploading a definition without them makes
-    API Manager detach the scopes and delete them from the key manager, so
-    they are always included here.
+    API Manager keeps the scopes and their roles inside the API definition
+    (securitySchemes.default with x-scopes-bindings, plus a security entry on each
+    operation). If you upload a definition without them, API Manager removes the
+    scopes from the API and deletes them from the key manager. So we always add them.
     """
     spec = copy.deepcopy(json.loads(spec_path.read_text(encoding="utf-8")))
     spec.setdefault("components", {})["securitySchemes"] = {
@@ -61,15 +60,15 @@ def wso2_definition(spec_path: Path) -> bytes:
 
 
 def ensure_key_manager_scopes() -> None:
-    """Make sure each scope exists in the key manager with the right role bindings.
+    """Make sure each scope exists in the key manager with the right roles.
 
-    Token issuance checks these bindings. A scope missing from the key manager
-    has no role check at all, so it would be granted to anyone who asks; this
-    verifies the registration and repairs it if API Manager left it out.
+    The key manager checks these roles when it gives out tokens. A scope that's
+    missing there has no role check at all, so anyone who asks would get it. This
+    checks each scope and fixes it if API Manager left it out.
     """
     values = env()
     auth = (values["WSO2_ADMIN_USERNAME"], values["WSO2_ADMIN_PASSWORD"])
-    with httpx.Client(verify=False, timeout=30, auth=auth) as km:  # local self-signed cert only
+    with httpx.Client(verify=False, timeout=30, auth=auth) as km:  # fine here: local self-signed cert
         for name, (display, description, roles) in SCOPES.items():
             current = km.get(f"{KM_SCOPES}/name/{name}")
             body = {"displayName": display, "description": description, "bindings": roles}
@@ -124,7 +123,7 @@ def add_header_policy(client: Client) -> dict:
 
 
 def configure(client: Client, api_id: str) -> None:
-    """Scopes, per-operation scope binding, CORS, endpoint and the secret header."""
+    """Scopes, which scope each operation needs, CORS, the endpoint and the secret header."""
     secret = env()["GATEWAY_SHARED_SECRET"]
     api = client.get(f"{PUBLISHER}/apis/{api_id}")
     endpoint = {"url": BACKEND_URL}
@@ -145,9 +144,9 @@ def configure(client: Client, api_id: str) -> None:
         "accessControlAllowHeaders": ["authorization", "content-type"],
         "accessControlAllowMethods": ["GET", "OPTIONS"],
     }
-    # API-level request policy: the gateway adds the shared secret on every backend call.
+    # Request policy for the whole API: the gateway adds the shared secret to every backend call.
     header = add_header_policy(client)
-    # Response policy: one audit line per request (see audit.py); never logs headers or bodies.
+    # Response policy: one audit line per request (see audit.py), never headers or bodies.
     api["apiPolicies"] = {
         "request": [{**header, "parameters": {"headerName": GATEWAY_SECRET_HEADER, "headerValue": secret}}],
         "response": [audit.ensure_audit_policy(client, api_id)],
@@ -160,10 +159,10 @@ def configure(client: Client, api_id: str) -> None:
 
 
 def deploy(client: Client, base: str, label: str) -> None:
-    """Create a new revision and deploy it to the Default gateway.
+    """Make a new revision and deploy it to the Default gateway.
 
-    API Manager keeps at most 5 revisions, so the oldest undeployed ones are
-    deleted first. Deploying replaces the previously deployed revision.
+    API Manager keeps at most 5 revisions, so the oldest ones that aren't deployed
+    get deleted first. Deploying replaces the revision that was deployed before.
     """
     revisions = client.get(f"{base}/revisions")["list"]
     undeployed = [r for r in revisions if not r.get("deploymentInfo")]

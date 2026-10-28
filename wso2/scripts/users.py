@@ -1,10 +1,10 @@
-"""Create the 'analyst' and 'manager' roles, the analyst1 / manager1 test users
+"""Create the 'analyst' and 'manager' roles, the analyst1 and manager1 test users,
 and the ai-agent-svc service account.
 
-API Manager 4.6.0 manages users through the RemoteUserStoreManagerService
-admin service (SOAP), authenticated with the admin account. On re-runs, users
-that already exist get their password reset to the value in .env and their
-role checked, so .env stays the single source of truth.
+API Manager 4.6.0 manages users through the RemoteUserStoreManagerService admin
+service (SOAP), logged in as admin. If a user already exists, its password is
+reset to the value in .env and its roles are checked, so .env is always the one
+place that decides.
 """
 
 from __future__ import annotations
@@ -20,10 +20,10 @@ SERVICE_URL = f"{MGMT_URL}/services/RemoteUserStoreManagerService.RemoteUserStor
 NS = "http://service.ws.um.carbon.wso2.org"
 
 ROLES = ["analyst", "manager"]
-# ai-agent-svc is a service account that owns the "AI Agent" application.
-# Client-credentials tokens carry the owner's roles, so giving it only the
-# analyst role means an AI agent can never obtain customer:read. Its password
-# is random and never used to sign in interactively.
+# ai-agent-svc is a service account. It owns the "AI Agent" application.
+# Client credentials tokens get the owner's roles, so with only the analyst
+# role an AI agent can never get customer:read. Its password is random and
+# nobody ever signs in with it.
 USERS = {
     "analyst1": (["analyst"], "ANALYST1_PASSWORD"),
     "manager1": (["manager"], "MANAGER1_PASSWORD"),
@@ -33,7 +33,8 @@ USERS = {
 
 class UserAdmin:
     def __init__(self, username: str, password: str) -> None:
-        self.http = httpx.Client(verify=False, timeout=30, auth=(username, password))  # local self-signed cert
+        # verify=False is fine here: the certificate is local and self-signed
+        self.http = httpx.Client(verify=False, timeout=30, auth=(username, password))
 
     def call(self, operation: str, body: str = "") -> str:
         envelope = (
@@ -42,7 +43,7 @@ class UserAdmin:
         )
         response = self.http.post(SERVICE_URL, content=envelope,
                                   headers={"Content-Type": "text/xml", "SOAPAction": f"urn:{operation}"})
-        # One-way operations (addRole, addUser, ...) answer 202 Accepted with no body.
+        # Some operations (addRole, addUser, ...) send nothing back, they just answer 202.
         if response.status_code not in (200, 202):
             raise ApiError(f"{operation} failed: {response.status_code} {response.text[:500]}")
         return response.text

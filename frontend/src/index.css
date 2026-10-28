@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Theme tokens (RGB triplets) consumed by tailwind.config.ts.
-   Text/background pairs meet WCAG AA (at least 4.5:1 for body text). */
+/* Theme colours (as RGB numbers) used by tailwind.config.ts.
+   Text and background pairs pass WCAG AA (at least 4.5:1 contrast for normal text). */
 @layer base {
   :root {
     color-scheme: light;
@@ -26,7 +26,7 @@
     --warning-soft: 254 249 235;
     --success: 21 128 61;
     --success-soft: 240 253 244;
-    --chart-series: 42 120 214; /* validated single-series blue (light) */
+    --chart-series: 42 120 214; /* chart blue, checked for contrast and colour blindness (light) */
     --chart-grid: 226 232 240;
     --chart-axis: 100 116 139;
   }
@@ -52,7 +52,7 @@
     --warning-soft: 48 37 14;
     --success: 74 222 128;
     --success-soft: 16 43 29;
-    --chart-series: 57 135 229; /* validated single-series blue (dark) */
+    --chart-series: 57 135 229; /* chart blue, checked for contrast and colour blindness (dark) */
     --chart-grid: 39 50 65;
     --chart-axis: 139 151 167;
   }

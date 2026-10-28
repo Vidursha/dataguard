@@ -9,10 +9,10 @@ export type ApiState<T> =
   | { status: 'error'; error: ApiError }
 
 /**
- * Run an authenticated gateway call and track loading / success / error.
- * `load` gets the access token and an AbortSignal; pass `null` to stay idle.
- * A 401 from the gateway means the token is no longer valid, so the session
- * is dropped and the auth guard sends the user back to sign in.
+ * Calls the gateway with the user's token and keeps track of loading, success
+ * and error. `load` gets the access token and an AbortSignal. Pass `null` to do
+ * nothing yet. A 401 from the gateway means the token doesn't work any more, so
+ * the session is cleared and the user is sent back to sign in.
  */
 export function useApi<T>(
   load: ((token: string, signal: AbortSignal) => Promise<T>) | null,

@@ -4,7 +4,7 @@ export function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse rounded-control bg-surface-muted ${className}`} aria-hidden="true" />
 }
 
-/** Wraps loading placeholders so screen readers hear one "Loading" message. */
+/** Wraps the loading placeholders, so screen readers hear one "Loading" message. */
 export function LoadingRegion({ label, children }: { label: string; children: ReactNode }) {
   return (
     <output aria-live="polite" className="block">

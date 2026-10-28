@@ -30,7 +30,7 @@ describe('Customers page', () => {
     const panel = await screen.findByTestId('access-denied')
     expect(panel).toHaveTextContent('Access denied by WSO2 API Manager (403)')
     expect(panel).toHaveTextContent('900910')
-    // The page made a real call to the gateway with the bearer token; no client-side role check.
+    // The page really called the gateway with the token. The UI didn't check the role itself.
     const [url, init] = fetchMock.mock.calls[0]
     expect(String(url)).toBe(`${GATEWAY}/customers/12347/summary`)
     expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer /)

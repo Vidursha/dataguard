@@ -1,15 +1,14 @@
-"""Application-level rate-limit policies (Admin REST API v4).
+"""Rate-limit policies for the applications (Admin REST API v4).
 
-Application policies in API Manager are counted per application *per user*,
-so every signed-in dashboard user gets their own allowance.
+API Manager counts application policies per application *and per user*, so
+every signed-in dashboard user gets their own allowance.
 
-- DataGuardAIAgent: 10 requests/minute. An AI agent can loop or fan out
-  without a human noticing; a tight limit caps the cost of a runaway agent and
-  makes bulk scraping slow, while still allowing a conversation's worth of
-  tool calls.
-- DataGuardDashboard: 30 requests/minute per user. Each dashboard page makes
-  one or two API calls, so normal browsing stays far below this, but rapid
-  repeated refreshing hits it (useful to demonstrate the 429 handling).
+- DataGuardAIAgent: 10 requests a minute. An AI agent can loop or fire off lots
+  of calls without anyone noticing. A tight limit keeps a runaway agent cheap
+  and makes scraping slow, but it's still enough for a normal conversation.
+- DataGuardDashboard: 30 requests a minute per user. Each page makes one or two
+  calls, so normal use stays well under it. Clicking refresh over and over does
+  hit it, which is handy for showing the 429 message.
 """
 
 from __future__ import annotations

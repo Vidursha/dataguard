@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 
 export type Theme = 'light' | 'dark'
 
-const STORAGE_KEY = 'dataguard.theme' // a display preference only; never tokens
+const STORAGE_KEY = 'dataguard.theme' // only a display setting, never tokens
 
 function initialTheme(): Theme {
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
@@ -19,7 +19,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       try {
         localStorage.setItem(STORAGE_KEY, next)
       } catch {
-        // Storage can be blocked (private mode); the toggle still works for this visit.
+        // Storage can be blocked (private mode). The toggle still works, it just won't be remembered.
       }
       return next
     })

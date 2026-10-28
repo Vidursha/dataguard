@@ -11,8 +11,8 @@ const PRESETS: { label: string; range: DateFilter }[] = [
 ]
 
 /**
- * Date range filter. Changes apply on submit, not on every keystroke, so the
- * dashboard does not spend the user's WSO2 rate-limit allowance while typing.
+ * Date range filter. Changes only apply when you press Apply, not on every key,
+ * so typing doesn't use up the user's WSO2 rate limit.
  */
 export function DateRangeFilter({ value, onChange }: { value: DateFilter; onChange: (range: DateFilter) => void }) {
   const [from, setFrom] = useState(value.from ?? '')

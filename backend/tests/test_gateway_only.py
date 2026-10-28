@@ -1,4 +1,4 @@
-"""The backend must refuse anything that did not come through the WSO2 gateway."""
+"""The backend must refuse every request that didn't come through the WSO2 gateway."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ def test_secret_in_another_header_is_rejected(raw_client):
 
 
 def test_bad_parameters_without_secret_still_403(raw_client):
-    # The gateway check runs before validation, so callers learn nothing about the API.
+    # The secret check runs before the input checks, so outsiders learn nothing about the API.
     assert raw_client.get("/products/top", params={"limit": "999"}).status_code == 403
 
 

@@ -81,7 +81,7 @@ function PoweredBy() {
 export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // Links close the mobile menu themselves; Escape closes it too.
+  // The links close the mobile menu, and so does the Escape key.
   useEffect(() => {
     if (!menuOpen) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false)
@@ -115,7 +115,7 @@ export function Layout() {
         </div>
       </aside>
 
-      {/* Mobile header + menu */}
+      {/* Mobile header and menu */}
       <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <Logo />

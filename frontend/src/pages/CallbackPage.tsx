@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext'
 import { completeSignIn } from '../auth/authService'
 import { Logo } from '../components/Logo'
 
-/** WSO2 redirects here with ?code=...&state=...; we exchange the code for tokens. */
+/** WSO2 sends the user here with ?code=...&state=..., and we swap the code for tokens. */
 export function CallbackPage() {
   const { setSession } = useAuth()
   const navigate = useNavigate()

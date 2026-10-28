@@ -1,7 +1,7 @@
 /**
- * Friendly empty and error states. AccessDenied and RateLimited are rendered
- * from the real gateway response (status and WSO2 error code), never from a
- * client-side guess.
+ * Friendly empty and error messages. AccessDenied and RateLimited are built
+ * from the real gateway response (status and WSO2 error code). The UI never
+ * guesses them on its own.
  */
 import type { ReactNode } from 'react'
 import type { ApiError } from '../api/client'
@@ -119,7 +119,7 @@ const GENERIC: Record<string, { title: string; body: string }> = {
   unauthorized: { title: 'Your session has ended', body: 'Please sign in again to continue.' },
 }
 
-/** Picks the right panel for any gateway error. */
+/** Chooses the right message for any gateway error. */
 export function ApiErrorView({ error, onRetry, what = 'this data' }: { error: ApiError; onRetry?: () => void; what?: string }) {
   if (error.kind === 'forbidden') return <AccessDenied error={error} what={what} />
   if (error.kind === 'rate_limited') return <RateLimited error={error} onRetry={onRetry} />

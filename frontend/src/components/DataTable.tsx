@@ -8,7 +8,7 @@ export interface Column<T> {
   numeric?: boolean
 }
 
-/** Accessible sortable table: header buttons toggle the sort and aria-sort announces it. */
+/** Sortable table. Click a header button to sort, and aria-sort tells screen readers about it. */
 export function DataTable<T>({
   caption,
   columns,

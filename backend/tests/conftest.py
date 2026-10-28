@@ -1,4 +1,4 @@
-"""Shared fixtures: a tiny database with hand-checkable numbers."""
+"""Shared test fixtures: a tiny database with numbers you can check by hand."""
 
 from __future__ import annotations
 
@@ -54,12 +54,12 @@ def db_path(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 @pytest.fixture()
 def raw_client(db_path: Path) -> TestClient:
-    """A client that does NOT add the gateway secret (simulates a direct call)."""
+    """A test client that does NOT add the gateway secret, like someone calling the backend directly."""
     return TestClient(create_app(Settings(database_path=db_path, gateway_secret=SECRET)))
 
 
 @pytest.fixture()
 def client(raw_client: TestClient) -> TestClient:
-    """A client that behaves like the WSO2 gateway: it adds the shared secret."""
+    """A test client that acts like the WSO2 gateway: it adds the shared secret."""
     raw_client.headers[GATEWAY_SECRET_HEADER] = SECRET
     return raw_client

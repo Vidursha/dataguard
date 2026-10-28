@@ -1,10 +1,10 @@
 import { defineConfig } from '@playwright/test'
 
 /**
- * Live end-to-end checks against the real stack (API Manager, backend and the
- * Vite dev server must be running). Uses the Microsoft Edge already installed
- * on Windows, so no browser download is needed.
- * Run: npm run e2e
+ * Live end-to-end checks against the real system. API Manager, the backend
+ * and the Vite dev server must all be running. It uses the Microsoft Edge that
+ * Windows already has, so there's no browser to download.
+ * Run it with: npm run e2e
  */
 export default defineConfig({
   testDir: './e2e',
@@ -15,7 +15,7 @@ export default defineConfig({
   use: {
     channel: 'msedge',
     baseURL: 'http://localhost:5173',
-    // LOCAL ONLY: accept API Manager's self-signed certificate on 9443 and 8243.
+    // LOCAL ONLY: accept API Manager's self-signed certificate on ports 9443 and 8243.
     ignoreHTTPSErrors: true,
     screenshot: 'only-on-failure',
   },

@@ -1,7 +1,7 @@
 """Export the FastAPI OpenAPI definition to wso2/openapi.json.
 
-The spec does not depend on the database or the secret, so placeholder
-settings are used and nothing needs to be running.
+The spec doesn't depend on the database or the secret, so dummy settings are
+fine and nothing has to be running.
 """
 
 from __future__ import annotations

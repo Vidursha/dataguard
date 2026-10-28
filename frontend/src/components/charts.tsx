@@ -1,7 +1,7 @@
 /**
- * Single-series charts. Colors come from theme tokens (CSS variables), so the
- * same validated blue is used in light and dark mode. Each chart has a text
- * summary for screen readers and a matching table elsewhere on its page.
+ * Charts with one data series. The colours come from the theme (CSS variables),
+ * so the same checked blue works in light and dark mode. Every chart has a text
+ * summary for screen readers, and its page also shows the numbers in a table.
  */
 import { useEffect, useState } from 'react'
 import {
@@ -23,7 +23,7 @@ const GRID = 'rgb(var(--chart-grid))'
 const AXIS = 'rgb(var(--chart-axis))'
 const TICK = { fill: AXIS, fontSize: 12 }
 
-/** Tracks a media query so charts can adapt label widths on phones. */
+/** Watches a media query, so charts can use narrower labels on phones. */
 function useMediaQuery(query: string): boolean {
   const get = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(query).matches
   const [matches, setMatches] = useState(get)
@@ -115,7 +115,7 @@ export interface BarDatum {
   orders?: number
 }
 
-/** Horizontal ranking bars (top products, countries). */
+/** Horizontal bars for rankings (top products, countries). */
 export function RankingBarChart({ data, caption }: { data: BarDatum[]; caption: string }) {
   const narrow = useMediaQuery('(max-width: 640px)')
   const labelWidth = narrow ? 110 : 200

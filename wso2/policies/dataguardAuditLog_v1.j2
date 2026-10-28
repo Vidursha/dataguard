@@ -1,5 +1,5 @@
-<!-- DataGuard audit log (response flow). level="custom" logs ONLY the properties
-     listed here: never headers, tokens, the gateway secret or message bodies. -->
+<!-- DataGuard audit log (runs on the response). level="custom" logs ONLY the
+     fields listed below. No headers, tokens, gateway secret or message bodies. -->
 <log level="custom" category="INFO">
     <property name="DATAGUARD_AUDIT" value="v1"/>
     <property name="correlationId" expression="get-property('correlation_id')"/>

@@ -1,11 +1,11 @@
-"""Obtain real WSO2 tokens for the live security tests.
+"""Get real WSO2 tokens for the live security tests.
 
-- user_token(): signs a test user in exactly like the browser does: OAuth2
-  Authorization Code + PKCE with the public "Dashboard" client, submitting
-  WSO2's own login form (and its one-time consent form, if shown).
-- agent_token(): OAuth2 client credentials for the "AI Agent" application.
+- user_token(): signs a test user in the same way the browser does. It uses
+  Authorization Code + PKCE with the public "Dashboard" client and fills in
+  WSO2's own login form (and the consent form the first time).
+- agent_token(): client credentials token for the "AI Agent" application.
 
-LOCAL DEVELOPMENT ONLY: TLS verification is off for the self-signed certificate.
+LOCAL USE ONLY: TLS checks are off because of the self-signed certificate.
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ def user_token(username: str, password: str, scope: str = ALL_SCOPES) -> dict:
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
     state = secrets.token_urlsafe(16)
 
-    with httpx.Client(verify=False, timeout=30) as http:  # local self-signed cert only
+    with httpx.Client(verify=False, timeout=30) as http:  # fine here: local self-signed cert
         response = http.get(f"{WSO2}/oauth2/authorize", params={
             "response_type": "code", "client_id": client_id, "redirect_uri": REDIRECT_URI, "scope": scope,
             "state": state, "code_challenge": challenge, "code_challenge_method": "S256",
@@ -57,7 +57,7 @@ def user_token(username: str, password: str, scope: str = ALL_SCOPES) -> dict:
         response = http.post(f"{WSO2}/commonauth",
                              data={"username": username, "password": password, "sessionDataKey": session_key})
 
-        # Follow redirects by hand: stop at our callback (nothing listens there in tests).
+        # Follow the redirects ourselves and stop at our callback URL (nothing runs there during tests).
         for _ in range(10):
             location = response.headers.get("location", "")
             if location.startswith(REDIRECT_URI):
@@ -86,7 +86,7 @@ def user_token(username: str, password: str, scope: str = ALL_SCOPES) -> dict:
 
 
 def agent_token(scope: str = "sales:read customer:read") -> dict:
-    """Client-credentials token for the AI Agent application."""
+    """Client credentials token for the AI Agent application."""
     values = settings()
     with httpx.Client(verify=False, timeout=30) as http:
         response = http.post(f"{WSO2}/oauth2/token",

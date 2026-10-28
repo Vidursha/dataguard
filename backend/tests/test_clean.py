@@ -1,4 +1,4 @@
-"""Cleaning rules in backend/clean.py, checked on hand-made frames."""
+"""Tests for the cleaning rules in backend/clean.py, using small hand-made tables."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def test_cleaning_rules():
 
     assert list(sales["invoice"]) == ["1", "2", "9"]
     assert list(cancellations["invoice"]) == ["C3"]
-    assert cancelled_sales.empty  # C3 is not *after* sale 1, so it does not reverse it
+    assert cancelled_sales.empty  # C3 has the same time as sale 1, not a later one, so it doesn't cancel it
     assert list(sales["revenue"]) == [3.0, 3.0, 18.0]
     assert list(sales["is_product"]) == [1, 1, 0]
     assert sales.loc[1, "description"] == "spaced name"
@@ -53,7 +53,7 @@ def test_exact_cancellations_remove_the_sale_they_reverse():
         # Guest cancellation: no customer to match on.
         ("400", "10003", "VASE", 1, "2010-05-01 10:00:00", 5.0, None, "Germany"),
         ("C401", "10003", "VASE", -1, "2010-05-02 10:00:00", 5.0, None, "Germany"),
-        # Same item bought twice, cancelled once: only the most recent earlier purchase goes.
+        # Bought the same item twice, cancelled once: only the latest purchase before it goes.
         ("500", "10004", "LAMP", 2, "2010-06-01 10:00:00", 10.0, 4.0, "EIRE"),
         ("501", "10004", "LAMP", 2, "2010-06-05 10:00:00", 10.0, 4.0, "EIRE"),
         ("C502", "10004", "LAMP", -2, "2010-06-06 10:00:00", 10.0, 4.0, "EIRE"),

@@ -1,4 +1,4 @@
-/** DataGuard mark: a shield holding three rising bars ("guarded data"), plus the wordmark. */
+/** DataGuard logo: a shield with three rising bars ("guarded data"), plus the name. */
 export function LogoMark({ className = 'h-8 w-8' }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden="true" focusable="false">

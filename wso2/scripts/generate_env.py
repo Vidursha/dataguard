@@ -1,6 +1,6 @@
-"""Create .env from .env.example, generating random secrets and passwords.
+"""Create .env from .env.example and fill in random secrets and passwords.
 
-Safe to re-run: values already present in .env are never changed.
+Safe to run again: values that are already in .env are never changed.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ TARGET = ROOT / ".env"
 
 GENERATED = {
     "GATEWAY_SHARED_SECRET": lambda: secrets.token_urlsafe(48),
-    # WSO2's default password policy is 5-30 non-whitespace characters.
+    # WSO2's default password rule: 5 to 30 characters, no spaces.
     "ANALYST1_PASSWORD": lambda: "An1-" + secrets.token_urlsafe(15),
     "MANAGER1_PASSWORD": lambda: "Mg1-" + secrets.token_urlsafe(15),
     "AI_AGENT_SERVICE_PASSWORD": lambda: "Svc-" + secrets.token_urlsafe(15),
@@ -48,7 +48,7 @@ def main() -> int:
         else:
             value = example_value
         lines.append(f"{key}={value}")
-    # Keep any extra keys the user added by hand.
+    # Keep any extra keys that were added by hand.
     known = {line.split("=", 1)[0] for line in lines if "=" in line and not line.startswith("#")}
     lines += [f"{k}={v}" for k, v in existing.items() if k not in known]
     TARGET.write_text("\n".join(lines) + "\n", encoding="utf-8")

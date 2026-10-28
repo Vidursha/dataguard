@@ -1,18 +1,18 @@
 /**
- * The signed-in session. Tokens live in sessionStorage only: they survive a
- * page reload in the same tab, vanish when the tab closes, and are never put
- * in localStorage.
+ * The signed-in session. Tokens are only kept in sessionStorage. They survive
+ * a page reload in the same tab, disappear when the tab is closed, and never
+ * go into localStorage.
  */
 
 export interface Session {
   accessToken: string
   idToken?: string
-  /** Epoch milliseconds when the access token expires. */
+  /** When the access token expires (epoch milliseconds). */
   expiresAt: number
   scopes: string[]
-  /** Subject (user ID) from the access token. */
+  /** The user ID ("sub") from the access token. */
   subject: string
-  /** Username, if WSO2 is configured to release one (see docs/manual-steps.md). */
+  /** Username, if WSO2 is set up to send it (see docs/manual-steps.md). */
   username?: string
 }
 
@@ -42,9 +42,9 @@ export function sessionFromTokens(accessToken: string, idToken?: string): Sessio
 }
 
 /**
- * The role, as shown by what WSO2 granted. API Manager issues customer:read
- * only to the manager role and sales:read to analysts and managers, so the
- * granted scopes identify the role exactly.
+ * Works out the role from the scopes WSO2 gave. API Manager only gives
+ * customer:read to managers, and sales:read to analysts and managers, so the
+ * scopes tell us the role exactly.
  */
 export function roleOf(session: Session): Role {
   if (session.scopes.includes('customer:read')) return 'manager'

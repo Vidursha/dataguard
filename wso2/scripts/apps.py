@@ -1,4 +1,4 @@
-"""Applications, subscriptions and OAuth2 keys (Developer Portal REST API v3)."""
+"""Creates the applications, subscriptions and OAuth2 keys (Developer Portal REST API v3)."""
 
 from __future__ import annotations
 
@@ -9,17 +9,17 @@ from common import (
 
 KEY_MANAGER = "Resident Key Manager"
 
-# The dashboard redirects back to /callback after sign-in and to / after sign-out.
+# After sign-in WSO2 sends the user back to /callback, and after sign-out to /.
 DASHBOARD_CALLBACK = f"regexp=({FRONTEND_ORIGIN}/callback|{FRONTEND_ORIGIN}/)"
 
 APPS = {
     DASHBOARD_APP: {
         "policy": DASHBOARD_POLICY,
         "description": "DataGuard web dashboard (browser SPA, OAuth2 Authorization Code + PKCE)",
-        "grants": ["authorization_code"],  # no refresh tokens in the browser: sign in again after expiry
+        "grants": ["authorization_code"],  # no refresh tokens in the browser, people just sign in again when the token expires
         "callback": DASHBOARD_CALLBACK,
-        # Public client: PKCE with S256 is mandatory and no client secret is used,
-        # because a browser cannot keep a secret.
+        # Public client: PKCE (S256) is required and there's no client secret,
+        # because a browser can't keep a secret.
         "properties": {"pkceMandatory": "true", "pkceSupportPlain": "false", "bypassClientCredentials": "true"},
     },
     AI_AGENT_APP: {
@@ -76,8 +76,9 @@ def ensure_subscription(client: Client, app_id: str, app_name: str, api_id: str,
 
 
 def write_frontend_env(client_id: str) -> None:
-    """The dashboard's client ID is public by design (PKCE public client), but
-    the file is still git-ignored because it is machine-specific."""
+    """The dashboard's client ID isn't secret (it's a PKCE public client), but the
+    file is still git-ignored because it's different on every machine.
+    """
     path = ROOT / "frontend" / ".env.local"
     path.parent.mkdir(exist_ok=True)
     path.write_text(
@@ -91,7 +92,7 @@ def write_frontend_env(client_id: str) -> None:
 
 
 def agent_client() -> Client:
-    """Developer Portal client acting as the AI agent's service account, which owns the AI Agent app."""
+    """Developer Portal client that acts as the AI agent's service account (it owns the AI Agent app)."""
     return user_client(AI_AGENT_OWNER, env()["AI_AGENT_SERVICE_PASSWORD"], DEVPORTAL_SCOPES)
 
 

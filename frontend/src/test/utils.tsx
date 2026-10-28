@@ -9,7 +9,7 @@ function base64Url(value: object): string {
   return btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-/** An unsigned JWT with the claims WSO2 puts in access tokens. */
+/** A fake (unsigned) JWT with the same claims WSO2 puts in access tokens. */
 export function fakeJwt(claims: Record<string, unknown>): string {
   return `${base64Url({ alg: 'none' })}.${base64Url(claims)}.sig`
 }
@@ -32,7 +32,7 @@ export function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
-/** Replace fetch with a mock that answers by URL. */
+/** Swap fetch for a fake one that answers based on the URL. */
 export function mockFetch(handler: (url: string) => Response | Promise<Response>) {
   const fn = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>((input) =>
     Promise.resolve(handler(String(input))),
@@ -54,7 +54,7 @@ export function renderWithAuth(ui: ReactElement, { session = analyst() as Sessio
   )
 }
 
-/** WSO2 gateway error bodies, as returned by API Manager 4.6.0. */
+/** Error bodies exactly as the API Manager 4.6.0 gateway sends them. */
 export const WSO2_403 = {
   code: '900910',
   message: 'The access token does not allow you to access the requested resource',

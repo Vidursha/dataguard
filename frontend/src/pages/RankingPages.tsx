@@ -1,4 +1,4 @@
-/** Products and Countries: ranking chart + sortable table + limit selector. */
+/** Products and Countries pages: ranking chart, sortable table and a "how many" selector. */
 import { useId, useState } from 'react'
 import { api } from '../api/endpoints'
 import type { CountryRevenue, ProductSales } from '../api/types'
@@ -100,8 +100,8 @@ const COUNTRY_COLUMNS: Column<CountryRevenue>[] = [
 
 export function CountriesPage() {
   const [limit, setLimit] = useState(10)
-  // The UK is about 85% of revenue, which flattens every other bar; this lets
-  // the chart show the international picture. The table always lists all rows.
+  // The UK is about 85% of revenue, so every other bar looks tiny. This lets the
+  // chart show the other countries. The table always lists every row.
   const [hideUk, setHideUk] = useState(false)
   const state = useApi((token, signal) => api.revenueByCountry(token, limit, signal), [limit])
 

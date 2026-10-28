@@ -1,15 +1,15 @@
-"""Live security tests against the running DataGuard stack.
+"""Live security tests against the running DataGuard system.
 
-Needs WSO2 API Manager, the backend and the setup scripts to have run.
-Usage (venv active, from the project root):
-    python scripts\\security_tests.py            # console table
+API Manager and the backend must be running, and the setup scripts must have run.
+How to run it (venv active, from the project folder):
+    python scripts\\security_tests.py            # table in the console
     python scripts\\security_tests.py --markdown # table for the README
 
-Each check uses real tokens from WSO2 (Authorization Code + PKCE through the
-login page for people, client credentials for the AI agent) and real HTTP
-calls. Exit code 0 only when every check passes.
+Every check uses real tokens from WSO2 (people sign in through the login page
+with PKCE, the AI agent uses client credentials) and makes real HTTP calls.
+It exits with code 0 only if every check passes.
 
-LOCAL DEVELOPMENT ONLY: TLS verification is disabled for API Manager's
+LOCAL USE ONLY: TLS checks are turned off because API Manager uses a
 self-signed certificate.
 """
 
@@ -36,10 +36,10 @@ FRONTEND_ORIGIN = "http://localhost:5173"
 UNKNOWN_ORIGIN = "https://evil.example"
 ALLOWED_TOOLS = {"getSalesSummary", "getMonthlySales", "getRevenueByCountry", "getTopProducts"}
 LOG_DIR = Path(os.environ.get("WSO2_HOME", r"C:\wso2am-4.6.0")) / "repository" / "logs"
-API_LOG = LOG_DIR / "api.log"            # per-API log, level BASIC
-CARBON_LOG = LOG_DIR / "wso2carbon.log"  # holds the DATAGUARD_AUDIT lines
+API_LOG = LOG_DIR / "api.log"            # per-API log (level BASIC)
+CARBON_LOG = LOG_DIR / "wso2carbon.log"  # the DATAGUARD_AUDIT lines end up here
 
-http = httpx.Client(verify=False, timeout=30)  # local self-signed certificate only
+http = httpx.Client(verify=False, timeout=30)  # fine here: local self-signed cert
 
 
 @dataclass
@@ -137,11 +137,11 @@ def log_size(path: Path) -> int:
 
 
 def read_new(path: Path, offset: int) -> str:
-    """Log text written since `offset` (the file size when the run started)."""
+    """The log text written after `offset` (the file size when this run started)."""
     if not path.exists():
         return ""
     with path.open("rb") as handle:
-        handle.seek(offset if log_size(path) >= offset else 0)  # the file may have rolled over
+        handle.seek(offset if log_size(path) >= offset else 0)  # the file may have been rotated and started again
         return handle.read().decode("utf-8", errors="replace")
 
 
@@ -153,8 +153,8 @@ BASIC_403 = re.compile(r'"verb":"GET".*"apiTo":"/dataguard/1\.0\.0/customers/123
 
 
 def check_logging(offsets: dict) -> Result:
-    """The manager's lookup has an audit line; the analyst's 403 is in api.log."""
-    deadline = time.time() + 20  # the gateway writes logs asynchronously
+    """The manager's lookup should have an audit line, and the analyst's 403 should be in api.log."""
+    deadline = time.time() + 20  # the gateway writes its logs a little later, so keep checking for a while
     while True:
         audit_ok = bool(AUDIT_LINE.search(read_new(CARBON_LOG, offsets["carbon"])))
         basic_ok = bool(BASIC_403.search(read_new(API_LOG, offsets["api"])))
@@ -166,7 +166,7 @@ def check_logging(offsets: dict) -> Result:
 
 
 def check_logs_clean(offsets: dict, tokens: dict, secret: str) -> Result:
-    """Neither log may contain the gateway secret (whole file) or this run's tokens."""
+    """Neither log may contain the gateway secret (whole file) or the tokens from this run."""
     findings = []
     for name, path in (("api.log", API_LOG), ("wso2carbon.log", CARBON_LOG)):
         if not path.exists():
@@ -214,13 +214,13 @@ def run() -> list[Result]:
         lambda: check_mcp_tools(tokens),
         lambda: check_logging(offsets),
         lambda: check_logs_clean(offsets, tokens, values.get("GATEWAY_SHARED_SECRET", "")),
-        lambda: check_agent_burst(tokens),  # last: it uses up the agent's allowance for a minute
+        lambda: check_agent_burst(tokens),  # keep this last: it uses up the agent's limit for a minute
     ]
     results = []
     for check in checks:
         try:
             results.append(check())
-        except Exception as error:  # report, don't crash: one broken check must not hide the others
+        except Exception as error:  # show the error instead of crashing, so one broken check doesn't hide the rest
             results.append(Result(check.__name__, "-", f"error: {error}", False))
     return results
 

@@ -1,4 +1,4 @@
-/** Small inline icons (24px grid, stroke-based). Decorative unless given a label. */
+/** Small line icons on a 24px grid. Screen readers skip them unless they get a label. */
 import type { ReactNode } from 'react'
 
 function Icon({ children, className = 'h-5 w-5' }: { children: ReactNode; className?: string }) {

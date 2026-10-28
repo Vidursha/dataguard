@@ -1,7 +1,7 @@
 /**
- * Live UI checks: sign in through the real WSO2 login page, then confirm the
- * dashboard shows real gateway data, the analyst's real 403, the manager's
- * customer view and a real 429 from the gateway's rate limiter.
+ * Live UI checks. Sign in through the real WSO2 login page, then make sure the
+ * dashboard shows real data from the gateway, the analyst gets a real 403, the
+ * manager sees the customer, and the rate limit gives a real 429.
  */
 import { expect, test, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
@@ -23,12 +23,12 @@ async function signIn(page: Page, username: string, password: string) {
   await page.goto('/')
   await expect(page).toHaveURL(/\/signin$/)
   await page.getByRole('button', { name: 'Sign in with WSO2' }).click()
-  // The real WSO2 API Manager login page.
+  // This is the real WSO2 API Manager login page.
   await page.waitForURL(/localhost:9443\/authenticationendpoint\/login\.do/)
   await page.getByTestId('login-page-username-input').fill(username)
   await page.getByTestId('login-page-password-input').fill(password)
   await page.locator('#loginForm button[type="submit"]').click()
-  // First sign-in per user shows WSO2's consent page once.
+  // The first sign-in for each user shows WSO2's consent page once.
   const approve = page.locator('#approve')
   await page.waitForURL(/(oauth2_consent\.do|localhost:5173\/overview)/)
   if (await approve.isVisible()) await approve.click()
@@ -37,7 +37,7 @@ async function signIn(page: Page, username: string, password: string) {
 
 async function signOut(page: Page) {
   await page.getByRole('button', { name: 'Sign out' }).first().click()
-  // WSO2's OIDC logout may ask for confirmation before ending the session.
+  // WSO2's logout page might ask "are you sure?" before ending the session.
   await page.waitForURL(/(localhost:5173|oidc\/logout|authenticationendpoint)/)
   const consent = page.getByRole('button', { name: /^Yes$/ })
   if (await consent.isVisible().catch(() => false)) await consent.click()
@@ -59,7 +59,7 @@ test('analyst sees real data but gets a real 403 on customer lookup', async ({ p
   await page.getByRole('button', { name: 'Look up' }).click()
   const response = await customerCall
   expect(response.status()).toBe(403)
-  expect(new URL(response.url()).port).toBe('8243') // the gateway, not the backend
+  expect(new URL(response.url()).port).toBe('8243') // the gateway, not the backend directly
   await expect(page.getByTestId('access-denied')).toContainText('Access denied by WSO2 API Manager (403)')
   await expect(page.getByTestId('access-denied')).toContainText('900910')
   await page.screenshot({ path: join(SHOTS, 'customers-analyst-403.png'), fullPage: true })
@@ -98,7 +98,7 @@ test('a burst of refreshes gets a real 429 from the gateway', async ({ page }) =
   page.on('response', (r) => {
     if (r.url().includes(':8243/') && r.status() === 429) throttled = true
   })
-  // 30 requests per minute per user; each refresh makes two calls.
+  // The limit is 30 requests a minute per user, and each refresh makes two calls.
   for (let i = 0; i < 25 && !(await page.getByTestId('rate-limited').isVisible()); i++) {
     await page.getByRole('button', { name: 'Refresh' }).click()
     await page.waitForTimeout(250)
@@ -122,7 +122,7 @@ test('mobile layout at 375px with dark theme', async ({ page }) => {
   await page.getByRole('link', { name: 'Countries' }).click()
   await expect(page.getByRole('cell', { name: 'United Kingdom' })).toBeVisible()
   await page.screenshot({ path: join(SHOTS, 'mobile-dark-countries.png'), fullPage: true })
-  // Theme is remembered across reloads.
+  // The theme should still be dark after a reload.
   await page.reload()
   await expect(page.locator('html')).toHaveClass(/dark/)
 })

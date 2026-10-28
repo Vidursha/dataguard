@@ -1,10 +1,10 @@
 /**
- * OAuth2 Authorization Code flow with PKCE against WSO2 API Manager.
+ * Sign-in with WSO2 API Manager using OAuth2 Authorization Code + PKCE.
  *
- * 1. startSignIn: create a verifier + state, redirect to WSO2's login page.
- * 2. WSO2 authenticates the user and redirects to /callback?code=...&state=...
- * 3. completeSignIn: check state, exchange code + verifier for tokens.
- * 4. signOut: forget tokens and end the WSO2 single sign-on session.
+ * 1. startSignIn: make a verifier and a state, then go to WSO2's login page.
+ * 2. WSO2 checks the user and sends them back to /callback?code=...&state=...
+ * 3. completeSignIn: check the state, then swap the code + verifier for tokens.
+ * 4. signOut: forget the tokens and end the WSO2 login session too.
  */
 
 import { config, redirectUri } from '../config'
@@ -36,8 +36,8 @@ export async function startSignIn(returnTo = '/overview'): Promise<void> {
   window.location.assign(`${config.wso2Url}/oauth2/authorize?${params}`)
 }
 
-// React may run the callback effect twice in development; an authorization
-// code can be used only once, so the exchange is memoized per code.
+// In development React can run the callback effect twice. A sign-in code only
+// works once, so we remember the exchange for each code and reuse it.
 const exchanges = new Map<string, Promise<{ session: Session; returnTo: string }>>()
 
 export function completeSignIn(search: string): Promise<{ session: Session; returnTo: string }> {
@@ -92,7 +92,7 @@ async function exchange(params: URLSearchParams): Promise<{ session: Session; re
   return { session, returnTo: pending.returnTo.startsWith('/') ? pending.returnTo : '/overview' }
 }
 
-/** Clear local tokens and end the WSO2 session, so the next sign-in asks for credentials again. */
+/** Clear the tokens here and end the WSO2 session, so the next sign-in asks for the password again. */
 export function signOut(session: Session | null): void {
   clearSession()
   if (!session?.idToken) {

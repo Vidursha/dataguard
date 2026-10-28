@@ -8,7 +8,7 @@ import { CallbackPage } from './pages/CallbackPage'
 import { CustomersPage } from './pages/CustomersPage'
 import { SignInPage } from './pages/SignInPage'
 
-// Chart pages load on demand so the charting library is not in the first download.
+// Chart pages load only when needed, so the chart library isn't part of the first download.
 const OverviewPage = lazy(() => import('./pages/OverviewPage').then((m) => ({ default: m.OverviewPage })))
 const ProductsPage = lazy(() => import('./pages/RankingPages').then((m) => ({ default: m.ProductsPage })))
 const CountriesPage = lazy(() => import('./pages/RankingPages').then((m) => ({ default: m.CountriesPage })))

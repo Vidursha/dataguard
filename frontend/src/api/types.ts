@@ -1,4 +1,4 @@
-/** Response shapes of the DataGuard Sales API (see wso2/openapi.json). */
+/** What the DataGuard Sales API sends back (see wso2/openapi.json). */
 
 export interface DateRange {
   start: string | null

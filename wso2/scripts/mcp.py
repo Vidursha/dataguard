@@ -1,10 +1,11 @@
-"""MCP server for AI assistants, generated from the DataGuard Sales API (Publisher REST API v4).
+"""MCP server for AI assistants, built from the DataGuard Sales API (Publisher REST API v4).
 
-API Manager 4.6.0 can turn operations of an existing API into MCP tools
-(POST /mcp-servers/generate-from-api). Tool names come from the OpenAPI
-operationIds and tool descriptions from the operation descriptions. Only the
-sales, product and country operations become tools: the customer endpoint is
-deliberately left out, so an AI assistant has no way to ask for personal data.
+API Manager 4.6.0 can turn the operations of an existing API into MCP tools
+(POST /mcp-servers/generate-from-api). The tool names come from the OpenAPI
+operationIds and the tool descriptions come from the operation descriptions.
+Only the sales, product and country operations become tools. The customer
+endpoint is left out on purpose, so an AI assistant has no way to ask for
+personal data.
 """
 
 from __future__ import annotations
@@ -23,7 +24,7 @@ DESCRIPTION = (
 
 
 def tool_operations(api: dict) -> list[dict]:
-    """One TOOL per allowed API operation, mapped exactly as the Publisher UI does."""
+    """One TOOL for each allowed API operation, built the same way the Publisher UI does it."""
     tools = []
     for operation in api["operations"]:
         if not operation["target"].startswith(ALLOWED_PREFIXES):
@@ -57,7 +58,7 @@ def ensure_server(client: Client, api: dict) -> str:
 
 
 def deploy_and_publish(client: Client, server_id: str) -> None:
-    from api import deploy  # same revision handling as the REST API
+    from api import deploy  # the same revision steps we use for the REST API
 
     deploy(client, f"{PUBLISHER}/mcp-servers/{server_id}", "MCP server")
     server = client.get(f"{PUBLISHER}/mcp-servers/{server_id}")

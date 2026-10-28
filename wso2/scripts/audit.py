@@ -1,23 +1,23 @@
-"""Request logging for the DataGuard API and MCP server, without secrets.
+"""Request logging for the DataGuard API and MCP server, without leaking secrets.
 
-Two layers, both configured through API Manager's own REST APIs (no change
-to API Manager's configuration files):
+There are two parts. Both are set up through API Manager's REST APIs, so none
+of API Manager's config files are changed.
 
 1. Per-API log level BASIC (DevOps REST API, /api/am/devops/v0/tenant-logs).
-   Every request, including ones the gateway rejects (401/403/429), is written
-   to repository/logs/api.log with timestamp, method, path, status code, source
-   IP and correlation ID. BASIC logs no headers and no bodies. (STANDARD would
-   log all headers, i.e. the Authorization token and the gateway secret, and
-   FULL also logs bodies, so neither is used.)
+   Every request goes into repository/logs/api.log, even the ones the gateway
+   rejects (401/403/429). It records the time, method, path, status code,
+   source IP and correlation ID. BASIC has no headers and no bodies. STANDARD
+   would log all headers (so the Authorization token and the gateway secret),
+   and FULL also logs bodies, so neither is used.
 
-2. A custom response-flow operation policy, dataguardAuditLog (files in
-   wso2/policies/), that writes one line per request that passed
-   authentication to repository/logs/wso2carbon.log with correlation ID,
-   method, path, status, application and user. It uses the Synapse log
-   mediator's "custom" level, which logs only the named properties.
+2. A custom response policy called dataguardAuditLog (files in wso2/policies/).
+   For every request that got past authentication, it writes one line to
+   repository/logs/wso2carbon.log with the correlation ID, method, path,
+   status, application and user. It uses the log mediator's "custom" level,
+   which only logs the fields we name.
 
-The correlation ID links the two: a line in api.log and the audit line for the
-same request carry the same ID.
+The correlation ID is the same in both places, so you can match the api.log
+line and the audit line for the same request.
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ POLICY_DIR = ROOT / "wso2" / "policies"
 
 
 def ensure_audit_policy(client: Client, api_id: str) -> dict:
-    """Upload the audit policy to the API if it isn't there yet; return its reference."""
+    """Upload the audit policy to the API if it's not there yet, and return a reference to it."""
     existing = client.get(f"{PUBLISHER}/apis/{api_id}/operation-policies", params={"limit": 100})["list"]
     policy = find_one(existing, name=POLICY_NAME, version=POLICY_VERSION)
     if policy:
@@ -54,7 +54,7 @@ def ensure_audit_policy(client: Client, api_id: str) -> dict:
 def set_log_level(api_id: str, label: str) -> None:
     values = env()
     auth = (values["WSO2_ADMIN_USERNAME"], values["WSO2_ADMIN_PASSWORD"])
-    with httpx.Client(verify=False, timeout=30, auth=auth) as http:  # local self-signed cert only
+    with httpx.Client(verify=False, timeout=30, auth=auth) as http:  # fine here: local self-signed cert
         response = http.put(f"{DEVOPS}/{api_id}", json={"logLevel": LOG_LEVEL})
     if response.status_code != 200:
         raise ApiError(f"Setting the log level of {label} failed: {response.status_code} {response.text}")

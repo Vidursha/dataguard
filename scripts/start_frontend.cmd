@@ -1,6 +1,6 @@
 @echo off
-rem Start the DataGuard dashboard on http://localhost:5173
-rem Requires frontend\.env.local, which wso2\scripts\setup_all.py writes.
+rem Starts the DataGuard dashboard on http://localhost:5173
+rem It needs frontend\.env.local, which wso2\scripts\setup_all.py creates.
 cd /d "%~dp0..\frontend"
 if not exist .env.local (
     echo frontend\.env.local not found. Run: venv\Scripts\python wso2\scripts\setup_all.py

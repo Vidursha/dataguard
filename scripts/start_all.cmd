@@ -1,10 +1,10 @@
 @echo off
-rem Start DataGuard in the right order, each part in its own window:
-rem   1. WSO2 API Manager  - the gateway and login server; everything depends on it.
-rem                          It takes about 3 to 5 minutes to start.
-rem   2. Backend API       - only reachable through the gateway.
+rem Starts all of DataGuard in the right order, each part in its own window:
+rem   1. WSO2 API Manager  - the gateway and login server. Everything needs it,
+rem                          and it takes about 3 to 5 minutes to start.
+rem   2. Backend API       - you can only reach it through the gateway.
 rem   3. Dashboard         - signs in through WSO2 and calls the gateway.
-rem Press Ctrl+C in each window to stop that part.
+rem To stop a part, press Ctrl+C in its window.
 setlocal
 cd /d "%~dp0.."
 if "%WSO2_HOME%"=="" set "WSO2_HOME=C:\wso2am-4.6.0"
@@ -20,7 +20,7 @@ start "WSO2 API Manager" /d "%WSO2_HOME%\bin" cmd /c api-manager.bat
 echo        Waiting for API Manager to answer on https://localhost:9443 (about 3 to 5 minutes)...
 set /a waited=0
 :wait
-rem ping is used as a 10-second pause because "timeout" fails when there is no keyboard input.
+rem Wait 10 seconds. ping is used because "timeout" breaks when there's no keyboard.
 ping -n 11 127.0.0.1 >nul
 set /a waited+=10
 call :apim_up
@@ -47,6 +47,6 @@ endlocal
 exit /b 0
 
 :apim_up
-rem Sets errorlevel 0 when API Manager answers HTTP 200 on its management port.
+rem Gives errorlevel 0 when API Manager answers with HTTP 200 on port 9443.
 curl -sk -o nul --max-time 5 -w "%%{http_code}" https://localhost:9443/services/Version | findstr /r "^200$" >nul
 exit /b %errorlevel%

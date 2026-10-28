@@ -1,12 +1,12 @@
-"""Print an access token for the "AI Agent" application, for connecting an MCP client.
+"""Print an access token for the "AI Agent" application, to connect an MCP client.
 
-Usage (venv active, from the project root):
+How to run it (venv active, from the project folder):
     python scripts\\get_agent_token.py
 
-Also saves API Manager's self-signed gateway certificate to
-wso2\\.state\\wso2-localhost.pem (git-ignored) so MCP clients built on Node.js
-can trust it with NODE_EXTRA_CA_CERTS instead of disabling TLS checks.
-Tokens last one hour; run this again when the assistant reports 401.
+It also saves API Manager's self-signed gateway certificate to
+wso2\\.state\\wso2-localhost.pem (git ignores it). MCP clients built on Node.js
+can then trust it with NODE_EXTRA_CA_CERTS, so TLS checks can stay on.
+Tokens last one hour. Run this again when the assistant gets a 401.
 """
 
 from __future__ import annotations

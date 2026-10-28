@@ -1,14 +1,14 @@
-"""Shared helpers for the WSO2 API Manager 4.6.0 setup scripts.
+"""Helpers shared by all the WSO2 API Manager 4.6.0 setup scripts.
 
-All calls use the product's official REST APIs:
+Everything goes through the product's official APIs:
   - Dynamic Client Registration  /client-registration/v0.17/register
   - Publisher REST API v4        /api/am/publisher/v4
   - Developer Portal REST API v3 /api/am/devportal/v3
   - Admin REST API v4            /api/am/admin/v4
   - RemoteUserStoreManagerService admin service (users and roles)
 
-LOCAL DEVELOPMENT ONLY: API Manager ships with a self-signed certificate, so
-TLS verification is turned off here. Never do this against a real server.
+LOCAL USE ONLY: API Manager comes with a self-signed certificate, so TLS checks
+are turned off here. Never do this with a real server.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ DEVPORTAL = f"{MGMT_URL}/api/am/devportal/v3"
 ADMIN = f"{MGMT_URL}/api/am/admin/v4"
 TOKEN_URL = f"{MGMT_URL}/oauth2/token"
 
-# What we create. Kept in one place so every script and test agrees.
+# Names of everything we create, kept in one place so all scripts and tests use the same ones.
 API_NAME = "DataGuardSalesAPI"
 API_DISPLAY_NAME = "DataGuard Sales API"
 API_CONTEXT = "/dataguard"
@@ -71,7 +71,7 @@ def env() -> dict[str, str]:
 
 
 def update_env(updates: dict[str, str]) -> None:
-    """Set keys in .env in place, keeping comments and order."""
+    """Change keys in .env without touching the comments or the order."""
     lines = ENV_FILE.read_text(encoding="utf-8").splitlines()
     remaining = dict(updates)
     for i, line in enumerate(lines):
@@ -96,7 +96,7 @@ class ApiError(RuntimeError):
 
 @dataclass
 class Client:
-    """Thin wrapper over httpx with an admin bearer token and readable errors."""
+    """Small wrapper around httpx that adds the admin token and gives readable errors."""
 
     http: httpx.Client
 
@@ -130,14 +130,14 @@ def admin_client() -> Client:
 
 
 def user_client(username: str, password: str, scopes: str) -> Client:
-    """Register (or re-use) a setup client via DCR and get a token for a user.
+    """Register (or reuse) a setup client with DCR and get a token for a user.
 
-    DCR returns the same client for the same clientName, so re-runs do not
-    pile up OAuth apps. The client is always registered with admin rights.
+    DCR gives back the same client for the same clientName, so running this again
+    doesn't keep creating new OAuth apps. The client is always registered as admin.
     """
     values = env()
     auth = (values["WSO2_ADMIN_USERNAME"], values["WSO2_ADMIN_PASSWORD"])
-    http = httpx.Client(verify=False, timeout=60)  # local self-signed cert only
+    http = httpx.Client(verify=False, timeout=60)  # fine here: local self-signed cert
     try:
         reg = http.post(
             f"{MGMT_URL}/client-registration/v0.17/register",

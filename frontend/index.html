@@ -10,7 +10,7 @@
     />
     <title>DataGuard</title>
     <script>
-      // Apply the saved theme before first paint so the page never flashes the wrong theme.
+      // Set the saved theme before the page draws, so it never flashes the wrong colours.
       try {
         var saved = localStorage.getItem('dataguard.theme')
         if (saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme: dark)').matches)) {

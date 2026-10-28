@@ -5,7 +5,7 @@ import { clearSession, loadSession, type Session } from './session'
 interface AuthState {
   session: Session | null
   setSession: (session: Session | null) => void
-  /** Drop an expired or rejected token locally without visiting WSO2. */
+  /** Forget an expired or rejected token here, without going to WSO2. */
   expire: () => void
   signOut: () => void
 }
@@ -35,7 +35,7 @@ export function useAuth(): AuthState {
   return ctx
 }
 
-/** For components that only render when signed in (inside <RequireAuth>). */
+/** For components that only show when someone is signed in (inside <RequireAuth>). */
 export function useSession(): Session {
   const { session } = useAuth()
   if (!session) throw new Error('useSession used outside <RequireAuth>')

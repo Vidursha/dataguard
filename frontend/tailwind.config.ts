@@ -1,9 +1,9 @@
 import type { Config } from 'tailwindcss'
 
 /**
- * DataGuard design system. Every color is a semantic token backed by a CSS
- * variable in src/index.css, so light and dark themes share one set of names.
- * Components use only these tokens (bg-surface, text-ink-muted, ...), never raw colors.
+ * DataGuard design system. Every colour is a named token that points to a CSS
+ * variable in src/index.css, so the light and dark themes use the same names.
+ * Components only use these tokens (bg-surface, text-ink-muted, ...), never raw colours.
  */
 const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`
 
@@ -33,7 +33,7 @@ export default {
         sans: ['system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'sans-serif'],
       },
       fontSize: {
-        // Type scale: [font-size, line-height]
+        // Text sizes: [font size, line height]
         xs: ['0.75rem', '1rem'],
         sm: ['0.875rem', '1.25rem'],
         base: ['1rem', '1.5rem'],

@@ -1,13 +1,13 @@
-"""Clean the UCI Online Retail II workbook and load it into SQLite.
+"""Clean the UCI Online Retail II Excel file and load it into SQLite.
 
-Usage (from the project root, with the venv active):
+How to run it (from the project folder, with the venv active):
     python backend/clean.py
 
-Reads both sheets of data/online_retail_II.xlsx, removes rows that are not
-genuine sales, moves cancellations into their own table, moves sales that a
-cancellation exactly reverses into cancelled_sales, adds a revenue column and
-writes everything to data/dataguard.db. The script is safe to re-run: it
-builds a fresh database file and swaps it in only when loading succeeded.
+It reads both sheets of data/online_retail_II.xlsx, throws away rows that are
+not real sales, puts cancellations in their own table, moves sales that a
+cancellation exactly undoes into cancelled_sales, adds a revenue column and
+saves everything to data/dataguard.db. You can run it again any time: it builds
+a new database file first and only swaps it in when everything worked.
 """
 
 from __future__ import annotations
@@ -25,16 +25,16 @@ SOURCE = ROOT / "data" / "online_retail_II.xlsx"
 TARGET = ROOT / "data" / "dataguard.db"
 SHEETS = ["Year 2009-2010", "Year 2010-2011"]
 
-# The second sheet starts on 2010-12-01, but the first sheet also contains
-# 1-9 December 2010. Those rows are byte-for-byte identical in both sheets.
+# The second sheet starts on 1 Dec 2010, but the first sheet also has
+# 1-9 Dec 2010. Those rows are exactly the same in both sheets.
 OVERLAP_START = pd.Timestamp("2010-12-01")
 
-# Accounting entries and test items: not sales of goods, so dropped entirely.
+# Accounting entries and test items. They are not real sales, so they are removed.
 NON_SALE_CODES = {"ADJUST", "ADJUST2", "B", "BANK CHARGES", "AMAZONFEE", "CRUK", "TEST001", "TEST002"}
 
-# Real revenue lines that are not products (postage, carriage, manual
-# entries, samples, discounts, gift vouchers). Kept in sales totals but
-# excluded from the best-selling products ranking.
+# Lines that are real money but not products (postage, carriage, manual
+# entries, samples, discounts, gift vouchers). They count in the sales totals,
+# but they are left out of the best-selling products list.
 NON_PRODUCT_CODES = {"POST", "DOT", "C2", "C3", "M", "S", "D", "PADS"}
 
 COLUMNS = {
@@ -54,7 +54,7 @@ def log(step: str, before: int, after: int) -> None:
 
 
 def read_workbook(path: Path) -> tuple[pd.DataFrame, dict[str, int]]:
-    """Read both sheets, drop the duplicated December 2010 overlap from sheet 1."""
+    """Read both sheets and drop the December 2010 rows that sheet 1 repeats."""
     frames = pd.read_excel(path, sheet_name=SHEETS, dtype={"Invoice": str, "StockCode": str})
     counts = {name: len(df) for name, df in frames.items()}
     first, second = frames[SHEETS[0]], frames[SHEETS[1]]
@@ -65,7 +65,7 @@ def read_workbook(path: Path) -> tuple[pd.DataFrame, dict[str, int]]:
 
 
 def standardize(df: pd.DataFrame) -> pd.DataFrame:
-    """Give every column a predictable type and trimmed text."""
+    """Give every column a fixed type and trim the text."""
     df = df.copy()
     df["invoice"] = df["invoice"].astype(str).str.strip()
     df["stock_code"] = df["stock_code"].astype(str).str.strip().str.upper()
@@ -80,16 +80,17 @@ def standardize(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def match_cancellations(sales: pd.DataFrame, cancellations: pd.DataFrame) -> pd.Series:
-    """Pair each cancellation with the sale it reverses, one-to-one.
+    """Match each cancellation to the sale it undoes. One cancellation, one sale.
 
-    A cancellation matches a sale with the same customer, stock code and
-    absolute quantity that happened before it. Cancellations are processed
-    oldest first and each takes the most recent unmatched sale, so a customer
-    who bought the same item several times only loses the purchase that was
-    actually cancelled. Guest cancellations (no customer) are never matched.
+    A cancellation matches a sale with the same customer, the same stock code and
+    the same quantity (ignoring the minus sign), where the sale came first.
+    Cancellations are handled oldest first, and each one takes the latest sale that
+    isn't matched yet. So if someone bought the same thing three times and
+    cancelled once, only one purchase is removed. Guest cancellations have no
+    customer, so they never match.
 
-    Returns a Series indexed by sale index, holding the matching cancellation's
-    index; sales without a match are absent.
+    Returns a Series: the index is the sale row and the value is the cancellation
+    row. Sales without a match are not in it.
     """
     keys = ["customer_id", "stock_code", "quantity"]
     sale_side = sales.loc[sales["customer_id"].notna(), keys + ["invoice_date"]]
@@ -114,7 +115,7 @@ def match_cancellations(sales: pd.DataFrame, cancellations: pd.DataFrame) -> pd.
 
 
 def clean(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Return (sales, cancellations, cancelled_sales), printing each filtering step."""
+    """Return (sales, cancellations, cancelled_sales) and print each cleaning step."""
     is_cancel = df["invoice"].str.startswith("C")
     cancellations = df[is_cancel].copy()
     sales = df[~is_cancel]
@@ -138,7 +139,7 @@ def clean(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         ~sales["stock_code"].isin(NON_PRODUCT_CODES) & ~sales["stock_code"].str.startswith("GIFT")
     ).astype("int64")
 
-    # Sales that a later cancellation exactly reverses move to cancelled_sales.
+    # Move sales that a later cancellation exactly undoes into cancelled_sales.
     matches = match_cancellations(sales, cancellations)
     cancelled_sales = sales.loc[matches.index].copy()
     cancelled_sales["cancelled_by_invoice"] = cancellations.loc[matches.values, "invoice"].to_numpy()
@@ -176,7 +177,7 @@ CREATE TABLE cancellations (
     customer_id  INTEGER,
     country      TEXT    NOT NULL
 );
-CREATE TABLE cancelled_sales (      -- sales reversed by an exact cancellation
+CREATE TABLE cancelled_sales (      -- sales that a cancellation exactly undid
     id                   INTEGER PRIMARY KEY,
     invoice              TEXT    NOT NULL,
     stock_code           TEXT    NOT NULL,
@@ -188,7 +189,7 @@ CREATE TABLE cancelled_sales (      -- sales reversed by an exact cancellation
     customer_id          INTEGER NOT NULL,
     country              TEXT    NOT NULL,
     is_product           INTEGER NOT NULL,
-    cancelled_by_invoice TEXT    NOT NULL,  -- the 'C...' invoice that reversed it
+    cancelled_by_invoice TEXT    NOT NULL,  -- the 'C...' invoice that cancelled it
     cancelled_at         TEXT    NOT NULL
 );
 CREATE INDEX idx_sales_invoice_date ON sales (invoice_date);
@@ -199,7 +200,7 @@ CREATE INDEX idx_cancellations_invoice_date ON cancellations (invoice_date);
 
 
 def to_records(df: pd.DataFrame, columns: list[str]) -> list[tuple]:
-    """Convert rows to plain Python values (sqlite3 rejects numpy ints and pd.NA)."""
+    """Turn rows into plain Python values (sqlite3 can't handle numpy ints or pd.NA)."""
     out = df[columns].copy()
     out["invoice_date"] = out["invoice_date"].dt.strftime("%Y-%m-%d %H:%M:%S")
     return [
@@ -221,7 +222,7 @@ SALES_COLUMNS = ["invoice", "stock_code", "description", "quantity", "invoice_da
 
 
 def load(sales: pd.DataFrame, cancellations: pd.DataFrame, cancelled_sales: pd.DataFrame, target: Path) -> None:
-    """Write all tables to a temporary file, then replace the target in one step."""
+    """Write all the tables to a temp file, then swap it in as the real database."""
     tmp = target.with_suffix(".db.tmp")
     tmp.unlink(missing_ok=True)
     conn = sqlite3.connect(tmp)
@@ -236,7 +237,7 @@ def load(sales: pd.DataFrame, cancellations: pd.DataFrame, cancelled_sales: pd.D
         conn.execute("ANALYZE")
         conn.commit()
     finally:
-        conn.close()  # the context manager only commits; Windows needs the handle closed
+        conn.close()  # 'with' only commits, it doesn't close, and Windows needs the file closed
     os.replace(tmp, target)
 
 

@@ -2,11 +2,11 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// The browser exchanges its PKCE authorization code at WSO2's token endpoint.
-// API Manager 4.6.0 sends no CORS headers on /oauth2/token by default, so the
-// dev/preview server forwards just that one path same-origin instead of
-// changing the server's deployment.toml (see docs/decisions.md).
-// secure: false accepts API Manager's self-signed certificate - LOCAL ONLY.
+// After sign-in, the browser swaps its code for a token at WSO2's token endpoint.
+// API Manager 4.6.0 doesn't send CORS headers on /oauth2/token by default, so
+// the dev server passes just that one path through to WSO2. That way we don't
+// have to change API Manager's deployment.toml (see docs/decisions.md).
+// secure: false accepts API Manager's self-signed certificate. LOCAL USE ONLY.
 const tokenProxy = {
   '/oauth2/token': { target: 'https://localhost:9443', changeOrigin: true, secure: false },
 }

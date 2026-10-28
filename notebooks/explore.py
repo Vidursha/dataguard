@@ -1,8 +1,8 @@
-"""Exploration of the raw Online Retail II workbook.
+"""First look at the raw Online Retail II Excel file.
 
-Run from the project root:  python notebooks/explore.py
-The findings drove the cleaning rules in backend/clean.py and are written up
-in docs/data-quality.md.
+Run it from the project folder:  python notebooks/explore.py
+What I found here shaped the cleaning rules in backend/clean.py, and it is
+written up in docs/data-quality.md.
 """
 
 import pandas as pd
@@ -19,7 +19,7 @@ print("Date range per sheet:")
 for name, f in frames.items():
     print(f"  {name}: {f['InvoiceDate'].min()} to {f['InvoiceDate'].max()}")
 
-# The sheets overlap: are the shared invoices identical?
+# The two sheets overlap. Are the shared invoices exactly the same?
 shared = set(first["Invoice"]) & set(second["Invoice"])
 print("Invoices in both sheets:", len(shared))
 print("Identical overlapping rows:", len(pd.merge(first, second, how="inner")))
@@ -32,7 +32,7 @@ print("Non-cancellation rows with quantity <= 0:", int((not_cancel["Quantity"] <
 print("Non-cancellation rows with price <= 0:", int((not_cancel["Price"] <= 0).sum()))
 print("Exact duplicate rows (all columns):", int(df.duplicated().sum()))
 
-# Stock codes that do not start with five digits are often not products.
+# Stock codes that don't start with five digits are often not real products.
 codes = df["StockCode"].astype(str).str.upper()
 odd = df[~codes.str.match(r"^\d{5}")]
 print("Non-standard stock codes and an example description:")

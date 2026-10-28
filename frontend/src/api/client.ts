@@ -1,8 +1,8 @@
 /**
  * Every data call goes to the WSO2 gateway with the user's access token.
- * The gateway decides: 401 (no/invalid token), 403 (missing scope),
- * 429 (rate limit). Those responses are turned into ApiError so pages can
- * show what WSO2 actually said.
+ * The gateway decides what happens: 401 (no token or a bad one), 403 (missing
+ * scope) or 429 (rate limit). These become an ApiError, so the pages can show
+ * what WSO2 really said.
  */
 
 import { config } from '../config'
@@ -19,10 +19,10 @@ export type ApiErrorKind =
 export class ApiError extends Error {
   readonly kind: ApiErrorKind
   readonly status: number
-  /** WSO2 error code (e.g. 900910 for a scope failure, 900803 for throttling) or backend code. */
+  /** WSO2 error code (like 900910 for a missing scope, 900803 for the rate limit) or the backend's code. */
   readonly code?: string
   readonly detail?: string
-  /** When the gateway will accept requests again (429 only). */
+  /** When the gateway will let requests through again (only for 429). */
   readonly retryAt?: Date
 
   constructor(init: {
@@ -59,7 +59,7 @@ interface GatewayErrorBody {
   error?: { code?: string; message?: string }
 }
 
-/** WSO2 writes times like "2026-Oct-28 10:23:00+0000 UTC". */
+/** WSO2 writes times like this: "2026-Oct-28 10:23:00+0000 UTC". */
 export function parseNextAccessTime(value?: string): Date | undefined {
   const match = value?.match(/^(\d{4})-(\w{3})-(\d{2}) (\d{2}:\d{2}:\d{2})/)
   if (!match) return undefined
@@ -72,7 +72,7 @@ async function toApiError(response: Response): Promise<ApiError> {
   try {
     body = (await response.json()) as GatewayErrorBody
   } catch {
-    // Non-JSON error body; fall back to the status code alone.
+    // The error body isn't JSON, so just use the status code.
   }
   const status = response.status
   const kind = KIND_BY_STATUS[status] ?? (status >= 500 ? 'server' : 'bad_request')

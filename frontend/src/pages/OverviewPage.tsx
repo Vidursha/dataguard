@@ -22,7 +22,7 @@ export function OverviewPage() {
     summary.reload()
     monthly.reload()
   }
-  // Show one error panel if both calls fail the same way (e.g. both throttled).
+  // If both calls fail the same way (for example both rate-limited), show one message.
   const error = summary.status === 'error' ? summary.error : monthly.status === 'error' ? monthly.error : null
 
   return (

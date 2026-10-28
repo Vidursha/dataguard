@@ -1,10 +1,10 @@
-"""Set up everything DataGuard needs in WSO2 API Manager 4.6.0, in order.
+"""Set up everything DataGuard needs in WSO2 API Manager 4.6.0, in the right order.
 
-Usage (API Manager running, venv active, from the project root):
+How to run it (API Manager running, venv active, from the project folder):
     python wso2\\scripts\\setup_all.py
 
-Every step checks what already exists and creates or updates it, so the script
-is safe to run again at any time (for example after changing the backend API).
+Each step checks what already exists and then creates or updates it, so you can
+run it again any time (for example after changing the backend API).
 """
 
 from __future__ import annotations

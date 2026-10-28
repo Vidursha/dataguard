@@ -2,8 +2,8 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 
-// jsdom has no layout engine, so every element measures 0x0. Recharts'
-// ResponsiveContainer sizes charts from ResizeObserver; report a desktop-sized box.
+// jsdom doesn't do layout, so every element is 0x0. Recharts sizes its charts
+// with ResizeObserver, so this fake one just reports a desktop-sized box.
 class ResizeObserverStub {
   private readonly callback: ResizeObserverCallback
   constructor(callback: ResizeObserverCallback) {

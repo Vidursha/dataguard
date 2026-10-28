@@ -6,9 +6,9 @@ import { Card, LoadingRegion, PageHeader, Skeleton } from '../components/ui'
 import { formatDateTime, formatGBP, formatNumber } from '../format'
 
 /**
- * Customer lookup. Every signed-in user sees this page and can submit a
- * lookup; whether data comes back is decided by the WSO2 gateway alone.
- * Analysts get the gateway's real 403, rendered by AccessDenied.
+ * Customer lookup. Everyone who is signed in can see this page and search.
+ * Only the WSO2 gateway decides if data comes back. Analysts get the gateway's
+ * real 403, which AccessDenied shows.
  */
 export function CustomersPage() {
   const [input, setInput] = useState('')
