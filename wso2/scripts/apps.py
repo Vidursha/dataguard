@@ -16,7 +16,7 @@ APPS = {
     DASHBOARD_APP: {
         "policy": DASHBOARD_POLICY,
         "description": "DataGuard web dashboard (browser SPA, OAuth2 Authorization Code + PKCE)",
-        "grants": ["authorization_code", "refresh_token"],
+        "grants": ["authorization_code"],  # no refresh tokens in the browser: sign in again after expiry
         "callback": DASHBOARD_CALLBACK,
         # Public client: PKCE with S256 is mandatory and no client secret is used,
         # because a browser cannot keep a secret.

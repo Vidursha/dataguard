@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme tokens (RGB triplets) consumed by tailwind.config.ts.
+   Text/background pairs meet WCAG AA (at least 4.5:1 for body text). */
+@layer base {
+  :root {
+    color-scheme: light;
+    --canvas: 246 247 249;
+    --surface: 255 255 255;
+    --surface-muted: 241 244 247;
+    --border: 226 232 240;
+    --border-strong: 203 213 225;
+    --ink: 15 23 42;            /* 17.9:1 on surface */
+    --ink-muted: 71 85 105;     /* 7.6:1 */
+    --ink-subtle: 100 116 139;  /* 4.8:1 */
+    --brand: 15 118 110;        /* 5.5:1 with white text */
+    --brand-hover: 17 94 89;
+    --brand-soft: 230 245 243;
+    --brand-ink: 15 118 110;
+    --on-brand: 255 255 255;
+    --danger: 185 28 28;
+    --danger-soft: 254 242 242;
+    --warning: 146 84 6;
+    --warning-soft: 254 249 235;
+    --success: 21 128 61;
+    --success-soft: 240 253 244;
+    --chart-series: 42 120 214; /* validated single-series blue (light) */
+    --chart-grid: 226 232 240;
+    --chart-axis: 100 116 139;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --canvas: 11 15 20;
+    --surface: 19 26 34;
+    --surface-muted: 27 36 48;
+    --border: 39 50 65;
+    --border-strong: 61 75 94;
+    --ink: 232 237 243;         /* 14.9:1 on surface */
+    --ink-muted: 169 180 194;   /* 8.6:1 */
+    --ink-subtle: 139 151 167;  /* 5.9:1 */
+    --brand: 45 212 191;
+    --brand-hover: 94 234 212;
+    --brand-soft: 17 50 50;
+    --brand-ink: 94 234 212;
+    --on-brand: 4 47 46;
+    --danger: 248 113 113;
+    --danger-soft: 50 21 24;
+    --warning: 251 191 36;
+    --warning-soft: 48 37 14;
+    --success: 74 222 128;
+    --success-soft: 16 43 29;
+    --chart-series: 57 135 229; /* validated single-series blue (dark) */
+    --chart-grid: 39 50 65;
+    --chart-axis: 139 151 167;
+  }
+
+  html {
+    @apply bg-canvas text-ink antialiased;
+  }
+
+  body {
+    @apply min-h-screen bg-canvas font-sans text-base;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-canvas;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-card border border-border bg-surface shadow-card;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-control px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-brand-on hover:bg-brand-hover;
+  }
+  .btn-secondary {
+    @apply btn border border-border-strong bg-surface text-ink hover:bg-surface-muted;
+  }
+  .input {
+    @apply block w-full rounded-control border border-border-strong bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-subtle focus:border-brand;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-ink-muted;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+}
